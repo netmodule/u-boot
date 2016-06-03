@@ -262,6 +262,52 @@ static struct module_pin_mux uart3_icev2_pin_mux[] = {
 	{-1},
 };
 
+static struct module_pin_mux rmii0_pin_mux_netbird[] = {
+	{OFFSET(mdio_clk), MODE(0) | PULLUDEN},	/* MDIO_CLK */
+	{OFFSET(mdio_data), MODE(0) | PULLUP_EN | RXACTIVE }, /* MDIO_DATA */
+	{OFFSET(mii1_crs), MODE(1) | PULLUDEN | RXACTIVE},		/* MII1_CRS */
+	{OFFSET(mii1_rxerr), MODE(1) | PULLUDEN | RXACTIVE},	/* MII1_RXERR */
+	{OFFSET(mii1_txen), MODE(1) | PULLUDEN},			/* MII1_TXEN */
+	{OFFSET(mii1_txd0), MODE(1) | PULLUDEN},			/* MII1_TXD0 */
+	{OFFSET(mii1_txd1), MODE(1) | PULLUDEN},			/* MII1_TXD1 */
+	{OFFSET(mii1_rxd0), MODE(1) | PULLUDEN | RXACTIVE},	/* MII1_RXD0 */
+	{OFFSET(mii1_rxd1), MODE(1) | PULLUDEN | RXACTIVE},	/* MII1_RXD1 */
+	{OFFSET(rmii1_refclk), MODE(0) | PULLUDEN | RXACTIVE},	/* RMII1_REFCLK */
+	{-1},
+};
+
+static struct module_pin_mux rmii1_pin_mux_netbird[] = {
+	{OFFSET(gpmc_a9), MODE(3) | PULLUDEN | RXACTIVE},		/* MII2_CRS */
+	{OFFSET(gpmc_wpn), MODE(3) | PULLUDEN | RXACTIVE},	/* MII2_RXERR */
+	{OFFSET(gpmc_a0), MODE(3) | PULLUDEN},			/* MII2_TXEN */
+	{OFFSET(gpmc_a5), MODE(3) | PULLUDEN},			/* MII2_TXD0 */
+	{OFFSET(gpmc_a4), MODE(3) | PULLUDEN},			/* MII2_TXD1 */
+	{OFFSET(gpmc_a11), MODE(3) | PULLUDEN | RXACTIVE},	/* MII1_RXD0 */
+	{OFFSET(gpmc_a10), MODE(3) | PULLUDEN | RXACTIVE},	/* MII1_RXD1 */
+	{OFFSET(mii1_col), MODE(1) | PULLUDEN | RXACTIVE},	/* RMII1_REFCLK */
+	{-1},
+};
+
+static struct module_pin_mux mmc0_sdio_pin_mux_netbird[] = {
+	{OFFSET(mmc0_clk), (MODE(0) | PULLUP_EN | RXACTIVE)},	/* MMC0_CLK */
+	{OFFSET(mmc0_cmd), (MODE(0) | PULLUP_EN | RXACTIVE)},	/* MMC0_CMD */
+	{OFFSET(mmc0_dat0), (MODE(0) | PULLUP_EN | RXACTIVE )},	/* MMC0_DAT0 */
+	{OFFSET(mmc0_dat1), (MODE(0) | PULLUP_EN | RXACTIVE )},	/* MMC0_DAT1 */
+	{OFFSET(mmc0_dat2), (MODE(0) | PULLUP_EN | RXACTIVE )},	/* MMC0_DAT2 */
+	{OFFSET(mmc0_dat3), (MODE(0) | PULLUP_EN | RXACTIVE )},	/* MMC0_DAT3 */
+	{-1},
+};
+
+static struct module_pin_mux mmc1_emmc_pin_mux_netbird[] = {
+	{OFFSET(gpmc_csn1), (MODE(2) | PULLUP_EN | RXACTIVE)},	/* MMC1_CLK */
+	{OFFSET(gpmc_csn2), (MODE(2) | PULLUP_EN | RXACTIVE)},	/* MMC1_CMD */
+	{OFFSET(gpmc_ad0), (MODE(1) | PULLUP_EN | RXACTIVE )},	/* MMC1_DAT0 */
+	{OFFSET(gpmc_ad1), (MODE(1) | PULLUP_EN | RXACTIVE )},	/* MMC1_DAT1 */
+	{OFFSET(gpmc_ad2), (MODE(1) | PULLUP_EN | RXACTIVE )},	/* MMC1_DAT2 */
+	{OFFSET(gpmc_ad3), (MODE(1) | PULLUP_EN | RXACTIVE )},	/* MMC1_DAT3 */
+	{-1},
+};
+
 #if defined(CONFIG_NOR_BOOT)
 void enable_norboot_pin_mux(void)
 {
@@ -390,6 +436,12 @@ void enable_board_pin_mux(void)
 #else
 		configure_module_pin_mux(mmc1_pin_mux);
 #endif
+	} else if (board_is_nbhw16()) {
+		/* Netbird board */
+		configure_module_pin_mux(rmii0_pin_mux_netbird);
+		configure_module_pin_mux(rmii1_pin_mux_netbird);
+		configure_module_pin_mux(mmc0_sdio_pin_mux_netbird);
+		configure_module_pin_mux(mmc1_emmc_pin_mux_netbird);
 	} else if (board_is_icev2()) {
 		configure_module_pin_mux(mmc0_pin_mux);
 		configure_module_pin_mux(gpio0_18_pin_mux);

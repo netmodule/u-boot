@@ -338,6 +338,12 @@ void am33xx_spl_board_init(void)
 				       TPS65217_LDO_VOLTAGE_OUT_3_3,
 				       TPS65217_LDO_MASK))
 			puts("tps65217_reg_write failure\n");
+	} else if (board_is_nbhw16()) {
+		/* Set CPU speed to 600 MHZ */
+		dpll_mpu_opp100.m = MPUPLL_M_600;
+
+		/* Set CORE Frequencies to OPP100 */
+		do_setup_dpll(&dpll_core_regs, &dpll_core_opp100);
 	} else {
 		int sil_rev;
 
@@ -386,7 +392,7 @@ const struct dpll_params *get_dpll_ddr_params(void)
 
 	if (board_is_evm_sk())
 		return &dpll_ddr_evm_sk;
-	else if (board_is_bone_lt() || board_is_icev2())
+	else if (board_is_bone_lt() || board_is_icev2() || board_is_nbhw16())
 		return &dpll_ddr_bone_black;
 	else if (board_is_evm_15_or_later())
 		return &dpll_ddr_evm_sk;
@@ -473,7 +479,7 @@ void sdram_init(void)
 	if (board_is_evm_sk())
 		config_ddr(303, &ioregs_evmsk, &ddr3_data,
 			   &ddr3_cmd_ctrl_data, &ddr3_emif_reg_data, 0);
-	else if (board_is_bone_lt())
+	else if (board_is_bone_lt() || board_is_nbhw16())
 		config_ddr(400, &ioregs_bonelt,
 			   &ddr3_beagleblack_data,
 			   &ddr3_beagleblack_cmd_ctrl_data,
@@ -698,6 +704,12 @@ int board_eth_init(bd_t *bis)
 		writel(MII_MODE_ENABLE, &cdev->miisel);
 		cpsw_slaves[0].phy_if = cpsw_slaves[1].phy_if =
 				PHY_INTERFACE_MODE_MII;
+	} else if (board_is_nbhw16()) {
+		writel(RMII_MODE_ENABLE | RMII_CHIPCKL_ENABLE, &cdev->miisel);
+		cpsw_slaves[0].phy_if = PHY_INTERFACE_MODE_RMII;
+		cpsw_slaves[1].phy_if = PHY_INTERFACE_MODE_RMII;
+		cpsw_slaves[0].phy_addr = 0;
+		cpsw_slaves[1].phy_addr = 1;
 	} else if (board_is_icev2()) {
 		writel(RMII_MODE_ENABLE | RMII_CHIPCKL_ENABLE, &cdev->miisel);
 		cpsw_slaves[0].phy_if = PHY_INTERFACE_MODE_RMII;
@@ -764,6 +776,8 @@ int board_fit_config_name_match(const char *name)
 	else if (board_is_bone() && !strcmp(name, "am335x-bone"))
 		return 0;
 	else if (board_is_bone_lt() && !strcmp(name, "am335x-boneblack"))
+		return 0;
+	else if (board_is_nbhw16() && !strcmp(name, "am335x-nbhw16"))
 		return 0;
 	else if (board_is_evm_sk() && !strcmp(name, "am335x-evmsk"))
 		return 0;
