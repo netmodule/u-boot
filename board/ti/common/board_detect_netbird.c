@@ -13,6 +13,7 @@
 #include <i2c.h>
 
 #include "board_detect.h"
+#include "bdparser.h"
 
 int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 {
@@ -24,7 +25,7 @@ int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 
 	/* Initialize with a known bad marker for i2c fails.. */
 	ep->header = TI_EEPROM_HEADER_MAGIC;
-	strlcpy(ep->name, "NBHW16", TI_EEPROM_HDR_NAME_LEN + 1);
+	strlcpy(ep->name, "NBHW16", TI_EEPROM_HDR_NAME_LEN + 1); /* Do not take from BD to allow use of u-boot without BD. */
 	strlcpy(ep->version, "0.0", TI_EEPROM_HDR_REV_LEN + 1);
 	strlcpy(ep->serial, "1234", TI_EEPROM_HDR_SERIAL_LEN + 1);
 	strlcpy(ep->config, "", TI_EEPROM_HDR_CONFIG_LEN + 1);

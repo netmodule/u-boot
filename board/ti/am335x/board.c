@@ -47,6 +47,11 @@ DECLARE_GLOBAL_DATA_PTR;
 #define GPIO_FET_SWITCH_CTRL	GPIO_TO_PIN(0, 7)
 #define GPIO_PHY_RESET		GPIO_TO_PIN(2, 5)
 
+#define NETBIRD_GPIO_RST_PHY_N	GPIO_TO_PIN(0, 16)
+#define NETBIRD_GPIO_RST_GSM_N	GPIO_TO_PIN(1, 24)
+#define NETBIRD_GPIO_WLAN_EN	GPIO_TO_PIN(3, 10)
+#define NETBIRD_GPIO_BT_EN		GPIO_TO_PIN(3, 4)
+
 #if defined(CONFIG_SPL_BUILD) || \
 	(defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_DM_ETH))
 static struct ctrl_dev *cdev = (struct ctrl_dev *)CTRL_DEVICE_BASE;
@@ -499,6 +504,22 @@ void sdram_init(void)
 
 #if (defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_SPL_BUILD)) || \
 	(defined(CONFIG_SPL_ETH_SUPPORT) && defined(CONFIG_SPL_BUILD))
+
+/**
+ * RMII mode on ICEv2 board needs 50MHz clock. Given the clock
+ * synthesizer With a capacitor of 18pF, and 25MHz input clock cycle
+ * PLL1 gives an output of 100MHz. So, configuring the div2/3 as 2 to
+ * give 50MHz output for Eth0 and 1.
+ */
+static struct clk_synth cdce913_data = {
+	.id = 0x81,
+	.capacitor = 0x90,
+	.mux = 0x6d,
+	.pdiv2 = 0x2,
+	.pdiv3 = 0x2,
+};
+#endif
+
 static void request_and_set_gpio(int gpio, char *name)
 {
 	int ret;
@@ -524,21 +545,6 @@ err_free_gpio:
 }
 
 #define REQUEST_AND_SET_GPIO(N)	request_and_set_gpio(N, #N);
-
-/**
- * RMII mode on ICEv2 board needs 50MHz clock. Given the clock
- * synthesizer With a capacitor of 18pF, and 25MHz input clock cycle
- * PLL1 gives an output of 100MHz. So, configuring the div2/3 as 2 to
- * give 50MHz output for Eth0 and 1.
- */
-static struct clk_synth cdce913_data = {
-	.id = 0x81,
-	.capacitor = 0x90,
-	.mux = 0x6d,
-	.pdiv2 = 0x2,
-	.pdiv3 = 0x2,
-};
-#endif
 
 /*
  * Basic board specific setup.  Pinmux has been handled already.
@@ -569,6 +575,13 @@ int board_init(void)
 		}
 	}
 #endif
+
+	if (board_is_nbhw16()) {
+		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_RST_PHY_N);
+		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_RST_GSM_N);
+		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_WLAN_EN);
+		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_BT_EN);
+	}
 
 	return 0;
 }
