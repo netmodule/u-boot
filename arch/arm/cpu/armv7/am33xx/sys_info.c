@@ -123,6 +123,14 @@ int am335x_get_efuse_mpu_max_freq(struct ctrl_dev *cdev)
 {
 	int sil_rev;
 
+/* @@nm@@mr@@ Ignore what the fuse says. 
+	We do not want to go higher than 600 MHZ for now. 
+	This should actually not be needed as it should be overwritten
+	in am33xx_spl_board_init anyway. Just to be sure. 
+	-> Remove it, if really not necessary.
+*/
+return MPUPLL_M_600;
+
 	sil_rev = readl(&cdev->deviceid) >> 28;
 
 	if (sil_rev == 1)
