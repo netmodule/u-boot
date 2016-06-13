@@ -116,6 +116,13 @@ static const struct ddr_data ddr3_beagleblack_data = {
 	.datawrsratio0 = MT41K256M16HA125E_PHY_WR_DATA,
 };
 
+static const struct ddr_data ddr3_netbird_data = {
+	.datardsratio0 = 40,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x38 */
+	.datawdsratio0 = 2,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x44 */
+	.datafwsratio0 = 64,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x94 */
+	.datawrsratio0 = MT41K256M16HA125E_PHY_WR_DATA,
+};
+
 static const struct ddr_data ddr3_evm_data = {
 	.datardsratio0 = MT41J512M8RH125_RD_DQS,
 	.datawdsratio0 = MT41J512M8RH125_WR_DQS,
@@ -142,6 +149,17 @@ static const struct cmd_control ddr3_cmd_ctrl_data = {
 };
 
 static const struct cmd_control ddr3_beagleblack_cmd_ctrl_data = {
+	.cmd0csratio = MT41K256M16HA125E_RATIO,
+	.cmd0iclkout = MT41K256M16HA125E_INVERT_CLKOUT,
+
+	.cmd1csratio = MT41K256M16HA125E_RATIO,
+	.cmd1iclkout = MT41K256M16HA125E_INVERT_CLKOUT,
+
+	.cmd2csratio = MT41K256M16HA125E_RATIO,
+	.cmd2iclkout = MT41K256M16HA125E_INVERT_CLKOUT,
+};
+
+static const struct cmd_control ddr3_netbird_cmd_ctrl_data = {
 	.cmd0csratio = MT41K256M16HA125E_RATIO,
 	.cmd0iclkout = MT41K256M16HA125E_INVERT_CLKOUT,
 
@@ -191,6 +209,16 @@ static struct emif_regs ddr3_beagleblack_emif_reg_data = {
 	.sdram_tim1 = MT41K256M16HA125E_EMIF_TIM1,
 	.sdram_tim2 = MT41K256M16HA125E_EMIF_TIM2,
 	.sdram_tim3 = MT41K256M16HA125E_EMIF_TIM3,
+	.zq_config = MT41K256M16HA125E_ZQ_CFG,
+	.emif_ddr_phy_ctlr_1 = MT41K256M16HA125E_EMIF_READ_LATENCY,
+};
+
+static struct emif_regs ddr3_netbird_emif_reg_data = {
+	.sdram_config = MT41K256M16HA125E_EMIF_SDCFG,
+	.ref_ctrl = MT41K256M16HA125E_EMIF_SDREF,
+	.sdram_tim1 = 0x0aaae53f, /* From AM335x_DDR_register_calc_tool.xls rp=5, rcd=5, wr=5, ras=14, rc=20, rrd=3, wtr=3 */
+	.sdram_tim2 = 0x24437fda, /* From AM335x_DDR_register_calc_tool.xls xp=2, odt=3, xsnr=67, xsrd=511, rtp=3, cke=2 */
+	.sdram_tim3 = 0x50ffe3ff, /* From AM335x_DDR_register_calc_tool.xls pdll_ul=5, zqcs=63, rfc=63, ras_max=15 */
 	.zq_config = MT41K256M16HA125E_ZQ_CFG,
 	.emif_ddr_phy_ctlr_1 = MT41K256M16HA125E_EMIF_READ_LATENCY,
 };
@@ -449,6 +477,14 @@ const struct ctrl_ioregs ioregs_bonelt = {
 	.dt1ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
 };
 
+const struct ctrl_ioregs ioregs_netbird = {
+	.cm0ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
+	.cm1ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
+	.cm2ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
+	.dt0ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
+	.dt1ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
+};
+
 const struct ctrl_ioregs ioregs_evm15 = {
 	.cm0ioctl		= MT41J512M8RH125_IOCTRL_VALUE,
 	.cm1ioctl		= MT41J512M8RH125_IOCTRL_VALUE,
@@ -487,11 +523,16 @@ void sdram_init(void)
 	if (board_is_evm_sk())
 		config_ddr(303, &ioregs_evmsk, &ddr3_data,
 			   &ddr3_cmd_ctrl_data, &ddr3_emif_reg_data, 0);
-	else if (board_is_bone_lt() || board_is_nbhw16())
+	else if (board_is_bone_lt())
 		config_ddr(400, &ioregs_bonelt,
 			   &ddr3_beagleblack_data,
 			   &ddr3_beagleblack_cmd_ctrl_data,
 			   &ddr3_beagleblack_emif_reg_data, 0);
+	else if (board_is_nbhw16())
+		config_ddr(400, &ioregs_netbird,
+			   &ddr3_netbird_data,
+			   &ddr3_netbird_cmd_ctrl_data,
+			   &ddr3_netbird_emif_reg_data, 0);
 	else if (board_is_evm_15_or_later())
 		config_ddr(303, &ioregs_evm15, &ddr3_evm_data,
 			   &ddr3_evm_cmd_ctrl_data, &ddr3_evm_emif_reg_data, 0);
