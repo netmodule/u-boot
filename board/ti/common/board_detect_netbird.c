@@ -62,6 +62,7 @@ int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 	u8          bdHwRev     = 0;
 	char        bdProdName[32];
 	bd_bool_t   rc;
+	int         i;
 
 	ep = TI_EEPROM_DATA;
 	if (ep->header == TI_EEPROM_HEADER_MAGIC)
@@ -74,7 +75,7 @@ int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 	strlcpy(ep->serial, "", TI_EEPROM_HDR_SERIAL_LEN + 1);
 	strlcpy(ep->config, "", TI_EEPROM_HDR_CONFIG_LEN + 1);
 
-	gpi2c_init();
+	// gpi2c_init();
 	rc = ti_i2c_eeprom_init(bus_addr, dev_addr);
 	if (rc)
 		goto do_fake_bd;
