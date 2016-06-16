@@ -216,9 +216,12 @@ static struct emif_regs ddr3_beagleblack_emif_reg_data = {
 static struct emif_regs ddr3_netbird_emif_reg_data = {
 	.sdram_config = MT41K256M16HA125E_EMIF_SDCFG,
 	.ref_ctrl = MT41K256M16HA125E_EMIF_SDREF,
-	.sdram_tim1 = 0x0aaae53f, /* From AM335x_DDR_register_calc_tool.xls rp=5, rcd=5, wr=5, ras=14, rc=20, rrd=3, wtr=3 */
-	.sdram_tim2 = 0x24437fda, /* From AM335x_DDR_register_calc_tool.xls xp=2, odt=3, xsnr=67, xsrd=511, rtp=3, cke=2 */
-	.sdram_tim3 = 0x50ffe3ff, /* From AM335x_DDR_register_calc_tool.xls pdll_ul=5, zqcs=63, rfc=63, ras_max=15 */
+	/*.sdram_tim1 = 0x0aaae53f,*/ /* From AM335x_DDR_register_calc_tool.xls rp=5, rcd=5, wr=5, ras=14, rc=20, rrd=3, wtr=3 */
+	.sdram_tim1 = 0x0aaae51b, /* From AM335x_DDR_register_calc_tool.xls rp=5, rcd=5, wr=5, ras=14, rc=20, rrd=3, wtr=3 */
+	/*.sdram_tim2 = 0x24437fda,*/ /* From AM335x_DDR_register_calc_tool.xls xp=2, odt=3, xsnr=67, xsrd=511, rtp=3, cke=2 */
+	.sdram_tim2 = 0x26437fda, /* From AM335x_DDR_register_calc_tool.xls xp=2, odt=3, xsnr=67, xsrd=511, rtp=3, cke=2 */
+	/* .sdram_tim3 = 0x50ffe3ff,*/ /* From AM335x_DDR_register_calc_tool.xls pdll_ul=5, zqcs=63, rfc=63, ras_max=15 */
+	.sdram_tim3 = 0x501f83ff, /* From AM335x_DDR_register_calc_tool.xls pdll_ul=5, zqcs=63, rfc=63, ras_max=15 */
 	.zq_config = MT41K256M16HA125E_ZQ_CFG,
 	.emif_ddr_phy_ctlr_1 = MT41K256M16HA125E_EMIF_READ_LATENCY,
 };
