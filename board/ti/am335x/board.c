@@ -117,10 +117,11 @@ static const struct ddr_data ddr3_beagleblack_data = {
 };
 
 static const struct ddr_data ddr3_netbird_data = {
-	.datardsratio0 = 40,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x38 */
-	.datawdsratio0 = 2,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x44 */
-	.datafwsratio0 = 64,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x94 */
-	.datawrsratio0 = MT41K256M16HA125E_PHY_WR_DATA,
+    /* Ratios were optimized by DDR3 training software from TI */
+	.datardsratio0 = 0x35,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x38 */
+	.datawdsratio0 = 0x96,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x44 */
+	.datafwsratio0 = 0x40,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x94 */
+	.datawrsratio0 = 0x79,
 };
 
 static const struct ddr_data ddr3_evm_data = {
