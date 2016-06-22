@@ -118,10 +118,10 @@ static const struct ddr_data ddr3_beagleblack_data = {
 
 static const struct ddr_data ddr3_netbird_data = {
     /* Ratios were optimized by DDR3 training software from TI */
-	.datardsratio0 = 0x35,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x38 */
-	.datawdsratio0 = 0x96,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x44 */
-	.datafwsratio0 = 0x40,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x94 */
-	.datawrsratio0 = 0x79,
+	.datardsratio0 = 0x40,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x38 */
+	.datawdsratio0 = 0x64,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x44 */
+	.datafwsratio0 = 0x02,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x94 */
+	.datawrsratio0 = 0x80,
 };
 
 static const struct ddr_data ddr3_evm_data = {
@@ -217,12 +217,9 @@ static struct emif_regs ddr3_beagleblack_emif_reg_data = {
 static struct emif_regs ddr3_netbird_emif_reg_data = {
 	.sdram_config = MT41K256M16HA125E_EMIF_SDCFG,
 	.ref_ctrl = MT41K256M16HA125E_EMIF_SDREF,
-	/*.sdram_tim1 = 0x0aaae53f,*/ /* From AM335x_DDR_register_calc_tool.xls rp=5, rcd=5, wr=5, ras=14, rc=20, rrd=3, wtr=3 */
-	.sdram_tim1 = 0x0aaae51b, /* From AM335x_DDR_register_calc_tool.xls rp=5, rcd=5, wr=5, ras=14, rc=20, rrd=3, wtr=3 */
-	/*.sdram_tim2 = 0x24437fda,*/ /* From AM335x_DDR_register_calc_tool.xls xp=2, odt=3, xsnr=67, xsrd=511, rtp=3, cke=2 */
-	.sdram_tim2 = 0x26437fda, /* From AM335x_DDR_register_calc_tool.xls xp=2, odt=3, xsnr=67, xsrd=511, rtp=3, cke=2 */
-	/* .sdram_tim3 = 0x50ffe3ff,*/ /* From AM335x_DDR_register_calc_tool.xls pdll_ul=5, zqcs=63, rfc=63, ras_max=15 */
-	.sdram_tim3 = 0x501f83ff, /* From AM335x_DDR_register_calc_tool.xls pdll_ul=5, zqcs=63, rfc=63, ras_max=15 */
+	.sdram_tim1 = 0x0aaae51b, /* From AM335x_DDR_register_calc_tool.xls */
+	.sdram_tim2 = 0x24437fda, /* From AM335x_DDR_register_calc_tool.xls */
+	.sdram_tim3 = 0x50ffe3ff, /* From AM335x_DDR_register_calc_tool.xls */
 	.zq_config = MT41K256M16HA125E_ZQ_CFG,
 	.emif_ddr_phy_ctlr_1 = MT41K256M16HA125E_EMIF_READ_LATENCY,
 };
@@ -630,6 +627,11 @@ int board_init(void)
 		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_RST_GSM_N);
 		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_WLAN_EN);
 		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_BT_EN);
+		/* There are two funcions on the same mux mode for MMC2_DAT7 we want
+		 * to use RMII2_CRS_DV so we need to set SMA2 Register to 1
+		 * See SPRS717J site 49 (10)*/
+		#define SMA2_REGISTER (CTRL_BASE + 0x1320)
+		writel(0x01, SMA2_REGISTER); /* Select RMII2_CRS_DV instead of MMC2_DAT7 */
 	}
 
 	return 0;
