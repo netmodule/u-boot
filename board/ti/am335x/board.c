@@ -48,7 +48,8 @@ DECLARE_GLOBAL_DATA_PTR;
 #define GPIO_PHY_RESET		GPIO_TO_PIN(2, 5)
 
 #define NETBIRD_GPIO_RST_PHY_N	GPIO_TO_PIN(0, 16)
-#define NETBIRD_GPIO_RST_GSM_N	GPIO_TO_PIN(1, 24)
+#define NETBIRD_GPIO_PWR_GSM	GPIO_TO_PIN(1, 22)
+#define NETBIRD_GPIO_RST_GSM	GPIO_TO_PIN(1, 24)
 #define NETBIRD_GPIO_WLAN_EN	GPIO_TO_PIN(3, 10)
 #define NETBIRD_GPIO_BT_EN		GPIO_TO_PIN(3, 4)
 #define NETBIRD_GPIO_EN_GPS_ANT	GPIO_TO_PIN(2, 24)
@@ -118,10 +119,10 @@ static const struct ddr_data ddr3_beagleblack_data = {
 
 static const struct ddr_data ddr3_netbird_data = {
     /* Ratios were optimized by DDR3 training software from TI */
-	.datardsratio0 = 0x40,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x38 */
-	.datawdsratio0 = 0x64,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x44 */
-	.datafwsratio0 = 0x02,	/* From RatioSeed_AM335x_boards.xlsx / Beaglebone uses 0x94 */
-	.datawrsratio0 = 0x80,
+	.datardsratio0 = 0x37,
+	.datawdsratio0 = 0x42,
+	.datafwsratio0 = 0x98,
+	.datawrsratio0 = 0x7a,
 };
 
 static const struct ddr_data ddr3_evm_data = {
@@ -565,7 +566,7 @@ static struct clk_synth cdce913_data = {
 };
 #endif
 
-static void request_and_set_gpio(int gpio, char *name)
+static void request_and_set_gpio(int gpio, char *name, int value)
 {
 	int ret;
 
@@ -581,7 +582,7 @@ static void request_and_set_gpio(int gpio, char *name)
 		goto err_free_gpio;
 	}
 
-	gpio_set_value(gpio, 1);
+	gpio_set_value(gpio, value);
 
 	return;
 
@@ -589,7 +590,8 @@ err_free_gpio:
 	gpio_free(gpio);
 }
 
-#define REQUEST_AND_SET_GPIO(N)	request_and_set_gpio(N, #N);
+#define REQUEST_AND_SET_GPIO(N)	request_and_set_gpio(N, #N, 1);
+#define REQUEST_AND_CLEAR_GPIO(N)	request_and_set_gpio(N, #N, 0);
 
 /*
  * Basic board specific setup.  Pinmux has been handled already.
@@ -622,9 +624,11 @@ int board_init(void)
 #endif
 
 	if (board_is_nbhw16()) {
+		REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_RST_GSM);
+        udelay(10000);
+		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_PWR_GSM);
 		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_LED_A);
 		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_RST_PHY_N);
-		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_RST_GSM_N);
 		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_WLAN_EN);
 		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_BT_EN);
 		/* There are two funcions on the same mux mode for MMC2_DAT7 we want
