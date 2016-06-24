@@ -29,6 +29,7 @@
 #include <miiphy.h>
 #include <cpsw.h>
 #include <power/tps65217.h>
+#include <power/tps65218.h>
 #include <power/tps65910.h>
 #include <environment.h>
 #include <watchdog.h>
@@ -382,6 +383,12 @@ void am33xx_spl_board_init(void)
 
 		/* Set CORE Frequencies to OPP100 */
 		do_setup_dpll(&dpll_core_regs, &dpll_core_opp100);
+
+		/* Clear th PFM Flag on DCDC4 */
+		if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_DCDC4, 0x00, 0x80)) {
+			puts ("tps65218_reg_write failure\n");
+		};
+
 	} else {
 		int sil_rev;
 
@@ -758,6 +765,11 @@ int board_eth_init(bd_t *bis)
 	mac_addr[3] = (mac_hi & 0xFF000000) >> 24;
 	mac_addr[4] = mac_lo & 0xFF;
 	mac_addr[5] = (mac_lo & 0xFF00) >> 8;
+
+	if (board_is_nbhw16()) {
+		/* Clock should be 2MHz */
+		cpsw_data.mdio_div = 0x3E;
+	}
 
 	if (!getenv("eth1addr")) {
 		if (is_valid_ethaddr(mac_addr))

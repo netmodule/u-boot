@@ -126,10 +126,6 @@
 #define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS       4
 #define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS   20
 
-/* PMIC support */
-#define CONFIG_POWER_TPS65217
-#define CONFIG_POWER_TPS65910
-
 /* SPL */
 #ifndef CONFIG_NOR_BOOT
 #define CONFIG_SPL_POWER_SUPPORT
@@ -412,5 +408,13 @@
 
 #define CONFIG_SYS_MEMTEST_START    0x80000000
 #define CONFIG_SYS_MEMTEST_END      0x87900000
+
+/* Enable support for TPS 65218 */
+#define CONFIG_POWER
+#define CONFIG_POWER_I2C
+#define CONFIG_POWER_TPS65218
+/* For compatibility reasons (BeagleBone) */
+#define CONFIG_POWER_TPS65217
+#define CONFIG_POWER_TPS62362
 
 #endif	/* ! __CONFIG_AM335X_EVM_H */
