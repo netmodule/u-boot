@@ -106,17 +106,17 @@ static struct module_pin_mux mmc1_pin_mux[] = {
 
 static struct module_pin_mux i2c0_pin_mux[] = {
 	{OFFSET(i2c0_sda), (MODE(0) | RXACTIVE |
-			PULLUDEN | SLEWCTRL)}, /* I2C_DATA */
+			PULLUDEN | PULLUP_EN | SLEWCTRL)}, /* I2C_DATA */
 	{OFFSET(i2c0_scl), (MODE(0) | RXACTIVE |
-			PULLUDEN | SLEWCTRL)}, /* I2C_SCLK */
+			PULLUDEN | PULLUP_EN | SLEWCTRL)}, /* I2C_SCLK */
 	{-1},
 };
 
 static struct module_pin_mux i2c1_pin_mux[] = {
 	{OFFSET(spi0_d1), (MODE(2) | RXACTIVE |
-			PULLUDEN | SLEWCTRL)},	/* I2C_DATA */
+			PULLUDEN | PULLUP_EN| SLEWCTRL)},	/* I2C_DATA */
 	{OFFSET(spi0_cs0), (MODE(2) | RXACTIVE |
-			PULLUDEN | SLEWCTRL)},	/* I2C_SCLK */
+			PULLUDEN | PULLUP_EN | SLEWCTRL)},	/* I2C_SCLK */
 	{-1},
 };
 
@@ -339,6 +339,8 @@ static struct module_pin_mux gpio_netbird_pin_mux[] = {
 	{OFFSET(gpmc_a8), (MODE(7) | PULLUDDIS)},	/* (V16) gpmc_a8.gpio1[24] */  /* RST_GSM~ */
 	/* Bank 2 */
 	{OFFSET(lcd_pclk), (MODE(7) | PULLUDDIS)},	/* (V5) lcd_pclk.gpio2[24] */  /* EN_GPS_ANT */
+	{OFFSET(lcd_data3), (MODE(7) | PULLUDEN| PULLUP_EN)},	/* (V5) lcd_pclk.gpio2[9] */  /* SYSBOOT */
+	{OFFSET(lcd_data4), (MODE(7) | PULLUDEN| PULLUP_EN)},	/* (V5) lcd_pclk.gpio2[10] */  /* SYSBOOT */
 	/* Bank 3 */
 	{OFFSET(mii1_rxdv), (MODE(7) | PULLUDDIS)},	/* (J17) gmii1_rxdv.gpio3[4] */  /* BT_EN */
 	{OFFSET(mii1_rxdv), (MODE(7) | PULLUDEN | PULLUP_EN | RXACTIVE)},	/* (K18) gmii1_txclk.gpio3[9] */  /* WLAN_IRQ */
