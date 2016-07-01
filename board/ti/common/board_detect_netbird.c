@@ -11,11 +11,14 @@
 #include <common.h>
 #include <asm/omap_common.h>
 #include <i2c.h>
+#include <malloc.h>
 
 #include "board_detect.h"
 #include "bdparser.h"
 
 #define BD_ADDRESS                0x0000  /* Board descriptor at beginning of EEPROM */
+
+static struct ti_common_eeprom bd_mirror;
 
 /**
  * ti_i2c_eeprom_init - Initialize an i2c bus and probe for a device
@@ -54,35 +57,37 @@ static int __maybe_unused ti_i2c_eeprom_read(int dev_addr, int offset,
 
 int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 {
-	struct ti_common_eeprom *ep;
 	BD_Context  bdCtx;        /* The board descriptor context */
 	u8          bdHeader[8];
 	void*       pBdData = NULL;
 	u8          bdHwVer     = 0;
 	u8          bdHwRev     = 0;
-	char        bdProdName[32];
 	bd_bool_t   rc;
 	int         i;
+	int         j;
 
-	ep = TI_EEPROM_DATA;
-	if (ep->header == TI_EEPROM_HEADER_MAGIC)
+	if (bd_mirror.header == TI_EEPROM_HEADER_MAGIC)
 		goto already_read;
 
 	/* Mark eeprom valid. */
-	ep->header = TI_EEPROM_HEADER_MAGIC;
-	strlcpy(ep->name, "NBHW16", TI_EEPROM_HDR_NAME_LEN + 1); /* Do not take from BD to allow use of u-boot without BD. */
-	strlcpy(ep->version, "0.0", TI_EEPROM_HDR_REV_LEN + 1);
-	strlcpy(ep->serial, "", TI_EEPROM_HDR_SERIAL_LEN + 1);
-	strlcpy(ep->config, "", TI_EEPROM_HDR_CONFIG_LEN + 1);
+	bd_mirror.header = TI_EEPROM_HEADER_MAGIC;
+	strlcpy(bd_mirror.name, "NBHW16", TI_EEPROM_HDR_NAME_LEN + 1); /* Do not take from BD to allow use of u-boot without BD. */
+	strlcpy(bd_mirror.version, "0.0", TI_EEPROM_HDR_REV_LEN + 1);
+	strlcpy(bd_mirror.serial, "", TI_EEPROM_HDR_SERIAL_LEN + 1);
+	strlcpy(bd_mirror.config, "", TI_EEPROM_HDR_CONFIG_LEN + 1);
 
 	// gpi2c_init();
 	rc = ti_i2c_eeprom_init(bus_addr, dev_addr);
-	if (rc)
+	if (rc) {
+		printf("%s() Can't initialize eeprom\n", __FUNCTION__);
 		goto do_fake_bd;
+	}
+
 
 	/* Read header bytes from beginning of EEPROM */
 	if (i2c_read( dev_addr, BD_ADDRESS, 2, bdHeader, BD_HEADER_LENGTH )) {
 		printf("%s() Can't read BD header from EEPROM\n", __FUNCTION__);
+
 		goto do_fake_bd;
 	}
 
@@ -125,23 +130,27 @@ int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 	if ( !BD_GetUInt8( &bdCtx, BD_Hw_Rel, 0, &bdHwRev) ) {
 		printf("%s() no Hw Release found\n", __FUNCTION__);
 	}
-	snprintf(ep->version, sizeof(ep->version), "%d,%d", BD_Hw_Ver, BD_Hw_Rel);
+	snprintf(bd_mirror.version, sizeof(bd_mirror.version), "%d,%d", BD_Hw_Ver, BD_Hw_Rel);
 
 	/* MAC address */
-	memset(ep->mac_addr, 0x00, TI_EEPROM_HDR_NO_OF_MAC_ADDR * TI_EEPROM_HDR_ETH_ALEN);
+	memset(bd_mirror.mac_addr, 0x00, TI_EEPROM_HDR_NO_OF_MAC_ADDR * TI_EEPROM_HDR_ETH_ALEN);
 	for (i=0; i<TI_EEPROM_HDR_NO_OF_MAC_ADDR; i++) {
-		BD_GetMAC( &bdCtx, BD_Eth_Mac, i, &(ep->mac_addr[i][0]) );
+		u8 mac[6];
+		BD_GetMAC( &bdCtx, BD_Eth_Mac, i, mac);
+		/* Convert nm MAC to TI MAC */
+		for (j=0; j<6; j++){
+			bd_mirror.mac_addr[i][j] = mac[j];
+		}
 	}
 
 	return 0;
 
 do_fake_bd:
+	printf("%s() do fake boarddescriptor\n", __FUNCTION__);
 	/* Fill in dummy mac addresses to get u-boot working without valid BD */
-	memset(ep->mac_addr, 0x00, TI_EEPROM_HDR_NO_OF_MAC_ADDR * TI_EEPROM_HDR_ETH_ALEN);
-	ep->mac_addr[0][5] = 1;
-	ep->mac_addr[1][5] = 2;
-
-	return 0;
+	memset(bd_mirror.mac_addr, 0x00, TI_EEPROM_HDR_NO_OF_MAC_ADDR * TI_EEPROM_HDR_ETH_ALEN);
+	bd_mirror.mac_addr[0][5] = 1;
+	bd_mirror.mac_addr[1][5] = 2;
 
 already_read:
 	return 0;
@@ -149,44 +158,53 @@ already_read:
 
 bool __maybe_unused board_ti_is(char *name_tag)
 {
-	struct ti_common_eeprom *ep = TI_EEPROM_DATA;
-
-	if (ep->header == TI_DEAD_EEPROM_MAGIC)
+	if (bd_mirror.header == TI_DEAD_EEPROM_MAGIC)
 		return false;
-	return !strncmp(ep->name, name_tag, TI_EEPROM_HDR_NAME_LEN);
+	return !strncmp(bd_mirror.name, name_tag, TI_EEPROM_HDR_NAME_LEN);
 }
 
 char * __maybe_unused board_ti_get_rev(void)
 {
-	struct ti_common_eeprom *ep = TI_EEPROM_DATA;
-
-	if (ep->header == TI_DEAD_EEPROM_MAGIC)
+	if (bd_mirror.header == TI_DEAD_EEPROM_MAGIC)
 		return NULL;
 
-	return ep->version;
+	return bd_mirror.version;
 }
 
 char * __maybe_unused board_ti_get_config(void)
 {
-	struct ti_common_eeprom *ep = TI_EEPROM_DATA;
-
-	if (ep->header == TI_DEAD_EEPROM_MAGIC)
+	if (bd_mirror.header == TI_DEAD_EEPROM_MAGIC)
 		return NULL;
 
-	return ep->config;
+	return bd_mirror.config;
 }
 
 char * __maybe_unused board_ti_get_name(void)
 {
-	struct ti_common_eeprom *ep = TI_EEPROM_DATA;
-
-	if (ep->header == TI_DEAD_EEPROM_MAGIC)
+	if (bd_mirror.header == TI_DEAD_EEPROM_MAGIC)
 		return NULL;
 
-	return ep->name;
+	return bd_mirror.name;
 }
 
 void __maybe_unused set_board_info_env(char *name)
 {
 	return;
+}
+
+void __maybe_unused
+board_ti_get_eth_mac_addr(int index,
+			  u8 mac_addr[TI_EEPROM_HDR_ETH_ALEN])
+{
+	if (bd_mirror.header == TI_DEAD_EEPROM_MAGIC)
+		goto fail;
+
+	if (index < 0 || index >= TI_EEPROM_HDR_NO_OF_MAC_ADDR)
+		goto fail;
+
+	memcpy(mac_addr, bd_mirror.mac_addr[index], TI_EEPROM_HDR_ETH_ALEN);
+	return;
+
+fail:
+	memset(mac_addr, 0, TI_EEPROM_HDR_ETH_ALEN);
 }

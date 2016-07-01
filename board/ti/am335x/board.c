@@ -119,7 +119,7 @@ static const struct ddr_data ddr3_beagleblack_data = {
 };
 
 static const struct ddr_data ddr3_netbird_data = {
-    /* Ratios were optimized by DDR3 training software from TI */
+	/* Ratios were optimized by DDR3 training software from TI */
 	.datardsratio0 = 0x37,
 	.datawdsratio0 = 0x42,
 	.datafwsratio0 = 0x98,
@@ -720,6 +720,17 @@ static struct cpsw_platform_data cpsw_data = {
 	  defined(CONFIG_USB_ETHER) && defined(CONFIG_MUSB_GADGET)) && \
 	 !defined(CONFIG_SPL_BUILD))
 
+static void set_mac_address(int index, uchar mac[6])
+{
+	/* Then take mac from bd */
+	if (is_valid_ethaddr(mac)) {
+		eth_setenv_enetaddr_by_index("eth", index, mac);
+	}
+	else {
+		printf("No valid MAC found in boarddescriptor");
+	}
+}
+
 /*
  * This function will:
  * Read the eFuse for MAC addresses, and set ethaddr/eth1addr/usbnet_devaddr
@@ -734,55 +745,32 @@ static struct cpsw_platform_data cpsw_data = {
 int board_eth_init(bd_t *bis)
 {
 	int rv, n = 0;
-	uint8_t mac_addr[6];
-	uint32_t mac_hi, mac_lo;
+	uint8_t mac_addr0[6];
+	uint8_t mac_addr1[6];
 	__maybe_unused struct ti_am_eeprom *header;
 
-	/* try reading mac address from efuse */
-	mac_lo = readl(&cdev->macid0l);
-	mac_hi = readl(&cdev->macid0h);
-	mac_addr[0] = mac_hi & 0xFF;
-	mac_addr[1] = (mac_hi & 0xFF00) >> 8;
-	mac_addr[2] = (mac_hi & 0xFF0000) >> 16;
-	mac_addr[3] = (mac_hi & 0xFF000000) >> 24;
-	mac_addr[4] = mac_lo & 0xFF;
-	mac_addr[5] = (mac_lo & 0xFF00) >> 8;
 
 #if (defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_SPL_BUILD)) || \
 	(defined(CONFIG_SPL_ETH_SUPPORT) && defined(CONFIG_SPL_BUILD))
-	if (!getenv("ethaddr")) {
-		printf("<ethaddr> not set. Validating first E-fuse MAC\n");
-
-		if (is_valid_ethaddr(mac_addr))
-			eth_setenv_enetaddr("ethaddr", mac_addr);
-	}
 
 #ifdef CONFIG_DRIVER_TI_CPSW
-
-	mac_lo = readl(&cdev->macid1l);
-	mac_hi = readl(&cdev->macid1h);
-	mac_addr[0] = mac_hi & 0xFF;
-	mac_addr[1] = (mac_hi & 0xFF00) >> 8;
-	mac_addr[2] = (mac_hi & 0xFF0000) >> 16;
-	mac_addr[3] = (mac_hi & 0xFF000000) >> 24;
-	mac_addr[4] = mac_lo & 0xFF;
-	mac_addr[5] = (mac_lo & 0xFF00) >> 8;
 
 	if (board_is_nbhw16()) {
 		/* Clock should be 2MHz */
 		cpsw_data.mdio_div = 0x3E;
 	}
 
-	if (!getenv("eth1addr")) {
-		if (is_valid_ethaddr(mac_addr))
-			eth_setenv_enetaddr("eth1addr", mac_addr);
-	}
-
 	if (read_eeprom() < 0)
 		puts("Could not get board ID.\n");
 
+	board_ti_get_eth_mac_addr(0, mac_addr0);
+	board_ti_get_eth_mac_addr(1, mac_addr1);
+
+	set_mac_address(0, mac_addr0);
+	set_mac_address(1, mac_addr1);
+
 	if (board_is_bone() || board_is_bone_lt() ||
-	    board_is_idk()) {
+		board_is_idk()) {
 		writel(MII_MODE_ENABLE, &cdev->miisel);
 		cpsw_slaves[0].phy_if = cpsw_slaves[1].phy_if =
 				PHY_INTERFACE_MODE_MII;
@@ -835,8 +823,8 @@ int board_eth_init(bd_t *bis)
 #endif
 #if defined(CONFIG_USB_ETHER) && \
 	(!defined(CONFIG_SPL_BUILD) || defined(CONFIG_SPL_USBETH_SUPPORT))
-	if (is_valid_ethaddr(mac_addr))
-		eth_setenv_enetaddr("usbnet_devaddr", mac_addr);
+	if (is_valid_ethaddr(mac_addr0))
+		eth_setenv_enetaddr("usbnet_devaddr", mac_addr0);
 
 	rv = usb_eth_initialize(bis);
 	if (rv < 0)
