@@ -748,6 +748,7 @@ int board_eth_init(bd_t *bis)
 	uint8_t mac_addr0[6];
 	uint8_t mac_addr1[6];
 	__maybe_unused struct ti_am_eeprom *header;
+	int boot_partition;
 
 
 #if (defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_SPL_BUILD)) || \
@@ -768,6 +769,14 @@ int board_eth_init(bd_t *bis)
 
 	set_mac_address(0, mac_addr0);
 	set_mac_address(1, mac_addr1);
+
+	boot_partition = get_boot_partition();
+	if (boot_partition > 1) {
+		boot_partition = 0;
+	}
+
+	/* mmcblk0p1 => u-boot, mmcblk0p2 => root0 so +2 */
+	setenv_ulong("rootpart", boot_partition + 2);
 
 	if (board_is_bone() || board_is_bone_lt() ||
 		board_is_idk()) {

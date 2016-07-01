@@ -84,29 +84,27 @@
 
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	DEFAULT_LINUX_BOOT_ENV \
-	DEFAULT_MMC_TI_ARGS \
-	"bootpart=1:2\0" \
-	"bootfile=/boot/kernel.bin\0" \
-	"fdtfile=/boot/openwrt-nbhw14.dtb\0" \
-	"rootpart=/dev/mmcblk0p2\0" \
-	"console=ttyO0,115200n8\0" \
-	"ipaddr 192.168.1.1\0" \
-	"serverip 192.168.1.254\0" \
-	"optargs=\0" \
-	"recovery=" \
-		"tftp ${loadaddr} recovery-image;" \
-		"tftp ${fdtaddr} recovery-dtb;" \
-		"setenv bootargs console=${console} ${optargs};" \
-		"bootz ${loadaddr} - ${fdtaddr};\0" \
-	"emmcboot=" \
-		"load mmc ${bootpart} ${loadaddr} ${bootfile};" \
-		"load mmc ${bootpart} ${fdtaddr} ${fdtfile};" \
-		"setenv bootargs console=console=${console} ${optargs} root=${rootpart} rootfstype=ext4 rootwait;" \
-		"bootz ${loadaddr} - ${fdtaddr};\0" \
-	NETARGS \
-	DFUARGS \
-	BOOTENV
+	"kernel_image=kernel.bin\0"	\
+	"fdt_image=openwrt-nbhw16.dtb\0"	\
+	"modeboot=sdboot\0" \
+	"fdt_addr=0x82000000\0" \
+	"kernel_addr=0x80000000\0" \
+	"load_addr=0x83000000\0" \
+	"root_part=1\0" /* Default root partition, overwritte in board/mv_ebu/a38x/nbhw14_env.c */ \
+	"add_sd_bootargs=setenv bootargs $bootargs root=/dev/mmcblk0p$root_part rootfstype=ext4 console=ttyS0,115200 rootwait\0" \
+	"add_version_bootargs=setenv bootargs $bootargs\0" \
+	"fdt_skip_update=yes\0" \
+	"ethprime=cpsw\0" \
+	"sdboot=if mmc dev 1; then " \
+			"echo Copying Linux from SD to RAM... && "\
+			"ext4load mmc 1:$root_part $kernel_addr /boot/$kernel_image || "\
+			"ext4load mmc 1:$root_part $kernel_addr /boot/zImage && "\
+			"if ext4load mmc 1:$root_part $fdt_addr /boot/$fdt_image; then setenv bootargs ro; else" \
+			"ext4load mmc 1:$root_part $fdt_addr /boot/am335x-nbhw16.dtb && setenv bootargs rw; fi && "\
+			"run add_sd_bootargs && run add_version_bootargs && bootz $kernel_addr - $fdt_addr; " \
+		"fi\0" \
+	"bootcmd=run sdboot\0" \
+	"recovery=tftpboot $kernel_addr recovery-image; tftpboot $fdt_addr recovery-dtb; setenv bootargs rdinit=/etc/preinit console=ttyS0,115200 debug; bootz $kernel_addr - $fdt_addr\0"
 #endif
 
 /* NS16550 Configuration */

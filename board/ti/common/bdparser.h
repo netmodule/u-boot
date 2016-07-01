@@ -29,12 +29,12 @@
  *                         Added bufLen parameter for BD_GetInfo()
  *                         Fixed wrong sizeof type in GetPartition()
  *                         Changed 64 bit type to "long long" from struct
- *                         Added BD_VerifySha1Hmac() function 
+ *                         Added BD_VerifySha1Hmac() function
  *****************************************************************************/
 
-/** 
+/**
  * @file
- * Board descriptor parser. 
+ * Board descriptor parser.
  *  Get() functions are implemented for all supported basis data types:
  *  - 8/16/32 bits unsigned integers
  *  - void
@@ -125,7 +125,7 @@ typedef enum _BD_Tags
   BD_Prod_Name          =     5,   /**<  "String"     -> Human readable product name  */
   BD_Prod_Variant       =     6,   /**<  "UInt16"     -> Product variant */
   BD_Prod_Compatibility =     7,   /**<  "String"     -> Product compatibility name */
-  
+
   BD_Eth_Mac            =     8,   /**<  "MAC"        -> MAC address of the ethernet interface */
   BD_Ip_Addr            =     9,   /**<  "IPV4"       -> IP V4 address (0.0.0.0 = DHCP) */
   BD_Ip_Netmask         =    10,   /**<  "IPV4"       -> IP V4 address mask */
@@ -133,7 +133,7 @@ typedef enum _BD_Tags
 
   BD_Usb_Device_Id      =    12,   /**<  "UInt16"      -> USB device ID */
   BD_Usb_Vendor_Id      =    13,   /**<  "UInt16"      -> USB vendor ID */
-      
+
   BD_Ram_Size           =    14,   /**<  "UInt32"     -> Available RAM size in bytes */
   BD_Ram_Size64         =    15,   /**<  "UInt64"     -> Available RAM size in bytes */
   BD_Flash_Size         =    16,   /**<  "UInt32"     -> Available flash size in bytes */
@@ -148,7 +148,7 @@ typedef enum _BD_Tags
 
   BD_Partition          =    24,   /**<  "Partition"   -> Offset of 1st Uboot partition in the 1st flash device in bytes */
   BD_Partition64        =    25,   /**<  "Partition64" -> Offset of 1st Uboot partition in the 1st flash device in bytes */
-  
+
   BD_Lcd_Type           =    26,   /**<  "UInt16"     -> LCD type -> 0 = not present (interpretation can be project specific) */
   BD_Lcd_Backlight      =    27,   /**<  "UInt8"      -> LCD backlight setting (0 = off; 100=max) */
   BD_Lcd_Contrast       =    28,   /**<  "UInt8"      -> LCD contrast setting (0 = min; 100=max) */
@@ -160,6 +160,9 @@ typedef enum _BD_Tags
 
   BD_Ui_Adapter_Type    =  4096,   /**<  "UInt16"     -> IV OG2 UI adapterboard type (0 = not present) */
 
+  /* project specific tags */
+  BD_BootPart			= 32768,   /**<  "UInt8" */
+
   BD_None_Type          = 65535,   /**<  "Void"       -> None */
 }
 BD_Tags;
@@ -169,8 +172,8 @@ BD_Tags;
  */
 typedef enum _BD_Type
 {
-  BD_Type_End         = 0x00000000, 
-  BD_Type_Void        = 0x00000001, 
+  BD_Type_End         = 0x00000000,
+  BD_Type_Void        = 0x00000001,
   BD_Type_UInt8       = 0x00000002,
   BD_Type_UInt16      = 0x00000003,
   BD_Type_UInt32      = 0x00000004,
@@ -182,7 +185,7 @@ typedef enum _BD_Type
   BD_Type_Partition   = 0x00000050,
   BD_Type_Partition64 = 0x00000051,
   BD_Type_HMAC        = 0x00000060,
-  BD_Type_None        = 0xFFFFFFFF, 
+  BD_Type_None        = 0xFFFFFFFF,
 }
 BD_Type;
 
@@ -237,7 +240,7 @@ typedef struct _BD_Context
 
   bd_uint_t          size;          /**< Size of descriptor data */
   bd_uint_t          entries;       /**< Number of entries found */
-  
+
   bd_uint16_t        checksum;      /**< Payload checksum contained in the header */
   const bd_uint8_t*  pData;         /**< Pointer to descriptor data (not header) */
   const bd_uint8_t*  pDataEnd;      /**< Pointer to end of data */
@@ -286,7 +289,7 @@ BD_Partition_Options;
 
 /**
  * Board descriptor type to describe filesystem partitions
- * 
+ *
  * The function BD_GetPartition will directly fill such a structure.
  */
 typedef struct _BD_PartitionEntry
@@ -325,7 +328,7 @@ extern "C" {
 
 /**
  * Checks a BD header's validity and updates the BD context.
- * 
+ *
  * @param[in,out] pCtx      The context of the BD being checked.
  * @param[in]     pHeader   Pointer to the BD header
  * @return        True if the header is valid and the context was updated.
@@ -335,9 +338,9 @@ bd_bool_t BD_CheckHeader( BD_Context* pCtx, const void* pHeader );
 
 /**
  * Imports BD data from a buffer into a BD context.
- * 
+ *
  * @param[in,out] pCtx      The context into which data is imported.
- * @param[in]     pData     Pointer to the buffer containing the BD entries. 
+ * @param[in]     pData     Pointer to the buffer containing the BD entries.
  * @return        True if BD entries could be succesfuly imported.
  *                False if there is an error in the buffer data structure.
  */
@@ -345,7 +348,7 @@ bd_bool_t BD_ImportData( BD_Context* pCtx, const void* pData );
 
 /**
  * Checks the existence of a tag in the BD
- * 
+ *
  * @param[in,out] pCtx      The context in which the tag is searched.
  * @param[in]     tag       Tag being checked.
  * @param[in]     index     Index of the tag (0=first index).
@@ -355,11 +358,11 @@ bd_bool_t BD_ExistsEntry( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t ind
 
 /**
  * Get type and name of a tag in the BD info table
- * 
+ *
  * @param[in]     tag       Tag reference.
  * @param[out]    pType     Type of the tag (0 if not used).
  * @param[out]    pName     Name of the tag (0 if not used).
- * @param[in]     bufLen    Length of the pName buffer. 
+ * @param[in]     bufLen    Length of the pName buffer.
  *                          If required the returned string for pName will be truncated.
  * @return        True if the tag in the BD info table exists else False.
  */
@@ -367,7 +370,7 @@ bd_bool_t BD_GetInfo( bd_uint16_t tag, BD_Type* pType, char* pName, bd_size_t bu
 
 /**
  * Initialize the entry before use BD_GetNextEntry
- * 
+ *
  * @param[out]    pEntry    BD entry to be initalized.
  * @return        True if the entry was initialized, fasle otherwise.
  */
@@ -385,7 +388,7 @@ bd_bool_t BD_GetNextEntry( const BD_Context* pCtx, BD_Entry* pEntry );
 
 /**
  * Gets a void value from a BD.
- * 
+ *
  * @param[in]     pCtx      The context from which the value is read.
  * @param[in]     tag       Tag Id.
  * @param[in]     index     Index of the tag (0=first occurance).
@@ -396,7 +399,7 @@ bd_bool_t BD_GetVoid( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index, 
 
 /**
  * Gets an 8 bits unsigned integer value from a BD.
- * 
+ *
  * @param[in]     pCtx      The context from which the value is read.
  * @param[in]     tag       Tag Id.
  * @param[in]     index     Index of the tag (0=first occurance).
@@ -407,7 +410,7 @@ bd_bool_t BD_GetUInt8( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index,
 
 /**
  * Gets a 16 bits unsigned integer value from a BD.
- * 
+ *
  * @param[in]     pCtx      The context from which the value is read.
  * @param[in]     tag       Tag Id.
  * @param[in]     index     Index of the tag (0=first occurance).
@@ -418,7 +421,7 @@ bd_bool_t BD_GetUInt16( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index
 
 /**
  * Gets a 32 bits unsigned integer value from a BD.
- * 
+ *
  * @param[in]     pCtx      The context from which the value is read.
  * @param[in]     tag       Tag Id.
  * @param[in]     index     Index of the tag (0=first occurance).
@@ -429,7 +432,7 @@ bd_bool_t BD_GetUInt32( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index
 
 /**
  * Gets a 64 bits unsigned integer value from a BD.
- * 
+ *
  * @param[in]     pCtx      The context from which the value is read.
  * @param[in]     tag       Tag Id.
  * @param[in]     index     Index of the tag (0=first occurance).
@@ -440,22 +443,22 @@ bd_bool_t BD_GetUInt64( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index
 
 /**
  * Gets a string value from a BD.
- * 
+ *
  * @param[in]     pCtx      The context from which the value is read.
  * @param[in]     tag       Tag Id.
  * @param[in]     index     Index of the tag (0=first occurance).
  * @param[out]    pResult   Placeholder for the read value.
  * @param[in]     bufLen    Length of the pResult buffer.
  * @return        True if the value in pResult is valid else False.
- * 
- * @note @li The returned string in pResult is null-terminated. 
- *       @li If the buffer is too.small to hold the value the returned string is truncated. 
+ *
+ * @note @li The returned string in pResult is null-terminated.
+ *       @li If the buffer is too.small to hold the value the returned string is truncated.
  */
 bd_bool_t BD_GetString( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index, char* pResult, bd_size_t bufLen );
 
 /**
  * Gets a binary large object (blob) value from a BD.
- * 
+ *
  * @param[in]     pCtx      The context from which the value is read.
  * @param[in]     tag       Tag Id.
  * @param[in]     index     Index of the tag (0=first occurance).
@@ -464,15 +467,15 @@ bd_bool_t BD_GetString( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index
  * @param[out]    pReadLen  The actual number of bytes read.
  * @return        True if the complete tag value could be read in pResult else False.
  */
-bd_bool_t BD_GetBlob( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index, 
+bd_bool_t BD_GetBlob( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index,
                       char* pResult, bd_size_t bufLen, bd_size_t* pReadLen );
 
 /**
  * Gets an IPv4 address from a BD.
- * 
- * The IP address is returned as a 32 bits unsigned integer with the most 
+ *
+ * The IP address is returned as a 32 bits unsigned integer with the most
  * significant byte first. E.g. 192.168.2.1 is stored as 0xC0A80201
- * 
+ *
  * @param[in]     pCtx      The context from which the IP address is read.
  * @param[in]     tag       Tag Id.
  * @param[in]     index     Index of the tag (0=first occurance).
@@ -483,7 +486,7 @@ bd_bool_t BD_GetIPv4( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index, 
 
 /**
  * Gets an Ethernet MAC address from a BD.
- * 
+ *
  * @param[in]     pCtx      The context from which the MAC address is read.
  * @param[in]     tag       Tag Id.
  * @param[in]     index     Index of the tag (0=first occurance).
@@ -494,7 +497,7 @@ bd_bool_t BD_GetMAC( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index, b
 
 /**
  * Gets a partition entry from a BD.
- * 
+ *
  * @param[in,out] pCtx      The context from which the MAC address is read.
  * @param[in]     tag       Tag Id.
  * @param[in]     index     Index of the tag (0=first occurance).
@@ -505,7 +508,7 @@ bd_bool_t BD_GetPartition( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t in
 
 /**
  * Gets a partition64 entry from a BD.
- * 
+ *
  * @param[in,out] pCtx      The context from which the MAC address is read.
  * @param[in]     tag       Tag Id.
  * @param[in]     index     Index of the tag (0=first occurance).
@@ -519,10 +522,10 @@ bd_bool_t BD_GetPartition64( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t 
 
 /**
  * Verifies the SHA1-HMAC checksum.
- * 
+ *
  * The checksum is computed with the specified key over the area defined
  * by the hash tag. The key must match the one used to generate the descriptor.
- * 
+ *
  * @param[in]     pCtx      The context from which the MAC address is read.
  * @param[in]     tag       Tag Id.
  * @param[in]     index     Index of the tag (0=first occurance).

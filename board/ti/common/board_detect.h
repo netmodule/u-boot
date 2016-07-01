@@ -193,4 +193,7 @@ u64 board_ti_get_emif2_size(void);
  */
 void set_board_info_env(char *name);
 
+/* Get the active boot partition 0 - ... */
+u8 get_boot_partition(void);
+
 #endif	/* __BOARD_DETECT_H */

@@ -16,9 +16,16 @@
 #include "board_detect.h"
 #include "bdparser.h"
 
-#define BD_ADDRESS                0x0000  /* Board descriptor at beginning of EEPROM */
+#define SYSINFO_ADDRESS					0x0000  /* Board descriptor at beginning of EEPROM */
+#define SYSCONFIG_ADDRESS				0x0600  /* Board descriptor at beginning of EEPROM */
+#define MAX_PARTITION_ENTRIES			4
 
 static struct ti_common_eeprom bd_mirror;
+
+static BD_Context *bd_board_info = 0;
+static BD_Context *bd_system_config = 0;
+
+static u8 boot_partition = 0;
 
 /**
  * ti_i2c_eeprom_init - Initialize an i2c bus and probe for a device
@@ -55,95 +62,115 @@ static int __maybe_unused ti_i2c_eeprom_read(int dev_addr, int offset,
 	return i2c_read(dev_addr, offset, 2, ep, epsize);
 }
 
-int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
+static int i2c_eeprom_read(int offset, void *data, size_t len)
 {
-	BD_Context  bdCtx;        /* The board descriptor context */
-	u8          bdHeader[8];
-	void*       pBdData = NULL;
+	return i2c_read(CONFIG_SYS_I2C_EEPROM_ADDR,
+		offset,
+		CONFIG_SYS_I2C_EEPROM_ADDR_LEN,
+		data,
+		len);
+}
+
+static int boardinfo_read(BD_Context **context, size_t start_addr)
+{
+	char bd_header_buffer[8];
+	void *bd_data = NULL;
+
+	// TODO read from real eeprom
+	if(*context)
+		return 0;
+
+	*context = calloc(sizeof(BD_Context), 1);
+	if(!*context)
+	{
+		printf("Couldn't allocate memory for board information\n");
+		goto failed;
+	}
+
+	if (i2c_eeprom_read(start_addr, bd_header_buffer, sizeof(bd_header_buffer))) {
+		printf("%s() Can't read BD header from EEPROM\n", __FUNCTION__);
+		goto failed;
+	}
+
+	if (!BD_CheckHeader(*context, bd_header_buffer))
+	{
+		printf("Invalid board information header\n");
+		goto failed;
+	}
+
+	bd_data = malloc((*context)->size);
+	if (bd_data == NULL)
+	{
+		printf("Can not allocate memory for board info");
+		goto failed;
+	}
+
+	if (i2c_eeprom_read(start_addr + sizeof(bd_header_buffer), bd_data, (*context)->size))
+	{
+		printf("Can not read board information data");
+		goto failed;
+	}
+
+	if (!BD_ImportData(*context, bd_data))
+	{
+		printf("Invalid board information!\n");
+		goto failed;
+	}
+
+	return 0;
+
+failed:
+	if (bd_data != NULL)
+	{
+		free(bd_data);
+		bd_data = NULL;
+	}
+
+	if (*context != NULL)
+	{
+		free(*context);
+		*context = NULL;
+	}
+
+	return -1;
+}
+
+void read_sysinfo(void)
+{
 	u8          bdHwVer     = 0;
 	u8          bdHwRev     = 0;
-	bd_bool_t   rc;
-	int         i;
-	int         j;
+	int			err;
+	int			i;
+	int			j;
 
-	if (bd_mirror.header == TI_EEPROM_HEADER_MAGIC)
-		goto already_read;
-
-	/* Mark eeprom valid. */
-	bd_mirror.header = TI_EEPROM_HEADER_MAGIC;
-	strlcpy(bd_mirror.name, "NBHW16", TI_EEPROM_HDR_NAME_LEN + 1); /* Do not take from BD to allow use of u-boot without BD. */
-	strlcpy(bd_mirror.version, "0.0", TI_EEPROM_HDR_REV_LEN + 1);
-	strlcpy(bd_mirror.serial, "", TI_EEPROM_HDR_SERIAL_LEN + 1);
-	strlcpy(bd_mirror.config, "", TI_EEPROM_HDR_CONFIG_LEN + 1);
-
-	// gpi2c_init();
-	rc = ti_i2c_eeprom_init(bus_addr, dev_addr);
-	if (rc) {
-		printf("%s() Can't initialize eeprom\n", __FUNCTION__);
+	err = boardinfo_read(&bd_board_info, SYSINFO_ADDRESS);
+	if (err ) {
+		printf("Could not read sysinf boarddescriptor\n");
 		goto do_fake_bd;
 	}
-
-
-	/* Read header bytes from beginning of EEPROM */
-	if (i2c_read( dev_addr, BD_ADDRESS, 2, bdHeader, BD_HEADER_LENGTH )) {
-		printf("%s() Can't read BD header from EEPROM\n", __FUNCTION__);
-
-		goto do_fake_bd;
-	}
-
-	/* Check whether this is a valid board descriptor (or empty EEPROM) */
-	rc = BD_CheckHeader( &bdCtx, bdHeader );
-	if (!rc) {
-		printf("%s() No valid board descriptor found\n", __FUNCTION__);
-		goto do_fake_bd;
-	}
-
-	/* Allocate memory for descriptor data and .. */
-	pBdData = malloc( bdCtx.size );
-	if ( pBdData == NULL ) {
-		printf("%s() Can't allocate %d bytes\n", __FUNCTION__, bdCtx.size);
-		goto do_fake_bd;
-	}
-
-	/* .. read data from EEPROM */
-	if (i2c_read(dev_addr, BD_ADDRESS+BD_HEADER_LENGTH, 2, pBdData, bdCtx.size)) {
-		printf("%s() Can't read data from EEPROM\n", __FUNCTION__);
-		goto do_fake_bd;
-	}
-
-	/*
-	 * Import data into board descriptor context
-	 */
-	rc = BD_ImportData( &bdCtx, pBdData );
-	if (!rc) {
-		printf("%s() Invalid board descriptor data\n", __FUNCTION__);
-		goto do_fake_bd;
-	}
-
-	/*** Get commonly used entries and cache them for later access ***/
 
 	/* Hardware version/revision */
-	if ( !BD_GetUInt8( &bdCtx, BD_Hw_Ver, 0, &bdHwVer) ) {
+	if ( !BD_GetUInt8( bd_board_info, BD_Hw_Ver, 0, &bdHwVer) ) {
 		printf("%s() no Hw Version found\n", __FUNCTION__);
 	}
 	/* Hardware version/revision */
-	if ( !BD_GetUInt8( &bdCtx, BD_Hw_Rel, 0, &bdHwRev) ) {
+	if ( !BD_GetUInt8( bd_board_info, BD_Hw_Rel, 0, &bdHwRev) ) {
 		printf("%s() no Hw Release found\n", __FUNCTION__);
 	}
-	snprintf(bd_mirror.version, sizeof(bd_mirror.version), "%d,%d", BD_Hw_Ver, BD_Hw_Rel);
+	snprintf(bd_mirror.version, sizeof(bd_mirror.version), "%d,%d", bdHwVer, bdHwRev);
 
 	/* MAC address */
 	memset(bd_mirror.mac_addr, 0x00, TI_EEPROM_HDR_NO_OF_MAC_ADDR * TI_EEPROM_HDR_ETH_ALEN);
 	for (i=0; i<TI_EEPROM_HDR_NO_OF_MAC_ADDR; i++) {
 		u8 mac[6];
-		BD_GetMAC( &bdCtx, BD_Eth_Mac, i, mac);
+		BD_GetMAC( bd_board_info, BD_Eth_Mac, i, mac);
 		/* Convert nm MAC to TI MAC */
 		for (j=0; j<6; j++){
 			bd_mirror.mac_addr[i][j] = mac[j];
 		}
 	}
 
-	return 0;
+	return;
 
 do_fake_bd:
 	printf("%s() do fake boarddescriptor\n", __FUNCTION__);
@@ -151,8 +178,67 @@ do_fake_bd:
 	memset(bd_mirror.mac_addr, 0x00, TI_EEPROM_HDR_NO_OF_MAC_ADDR * TI_EEPROM_HDR_ETH_ALEN);
 	bd_mirror.mac_addr[0][5] = 1;
 	bd_mirror.mac_addr[1][5] = 2;
+}
 
-already_read:
+void try_partition_read(void)
+{
+	BD_PartitionEntry64 partition;
+	int i;
+	int rc;
+	int partition_count = 0;
+
+	for (i = 0; i < MAX_PARTITION_ENTRIES; i++)
+	{
+		rc = BD_GetPartition64( bd_system_config, BD_Partition64, i, &partition );
+		if (rc) {
+			partition_count++;
+			if (((partition.flags & BD_Partition_Flags_Active) != 0) &&
+					(i > 0)) {
+				boot_partition = i - 1; /* The first one is a dummy partition for u-boot */
+			}
+		}
+	}
+
+	if (partition_count < 1)
+	{
+		printf("ERROR: Too few partitions defined\n");
+	}
+
+	printf("Found %d partitions\n", partition_count);
+}
+
+void read_sysconfig(void)
+{
+	int err;
+	u8 boot_part;
+
+	err = boardinfo_read(&bd_system_config, SYSCONFIG_ADDRESS);
+	if (err ) {
+		printf("Could not read sysconfig boarddescriptor\n");
+	}
+
+	/* If we have a new Bootpartition entry take this as boot part */
+	if ( BD_GetUInt8( bd_system_config, BD_BootPart, 0, &boot_part) ) {
+		if (boot_part >= 0 && boot_part <= 1) {
+			boot_partition = boot_part;
+			return;
+		}
+	}
+
+	/* If we not have a Bootpartition entry, perhaps we have a partition table */
+	try_partition_read();
+}
+
+int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
+{
+	if (bd_mirror.header == TI_EEPROM_HEADER_MAGIC)
+		return 0;
+
+	read_sysinfo();
+	read_sysconfig();
+
+	bd_mirror.header = TI_EEPROM_HEADER_MAGIC;
+
 	return 0;
 }
 
@@ -207,4 +293,9 @@ board_ti_get_eth_mac_addr(int index,
 
 fail:
 	memset(mac_addr, 0, TI_EEPROM_HDR_ETH_ALEN);
+}
+
+u8 get_boot_partition(void)
+{
+	return boot_partition;
 }
