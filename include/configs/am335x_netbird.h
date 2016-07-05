@@ -41,9 +41,6 @@
 /* Custom script for NOR */
 #define CONFIG_SYS_LDSCRIPT		"board/ti/am335x/u-boot.lds"
 
-/* Always 128 KiB env size */
-#define CONFIG_ENV_SIZE			(128 << 10)
-
 /* Enhance our eMMC support / experience. */
 #define CONFIG_CMD_GPT
 #define CONFIG_EFI_PARTITION
@@ -118,12 +115,18 @@
 #define CONFIG_BAUDRATE			115200
 
 #define CONFIG_CMD_EEPROM
-#define CONFIG_ENV_EEPROM_IS_ON_I2C
 #define CONFIG_SYS_I2C_EEPROM_ADDR              0x50	/* Main EEPROM */
 #define CONFIG_SYS_I2C_EEPROM_ADDR_LEN          2
 #define CONFIG_SYS_I2C_SPEED                    100000
 #define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS       4
 #define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS   50
+
+#define CONFIG_ENV_IS_IN_EEPROM
+#define CONFIG_ENV_OFFSET						0x1000  /* The Environment is located at 4k */
+#define CONFIG_ENV_SIZE							0x800	/* The maximum size is 2k */
+
+/* We need to disable SPI to not confuse the eeprom env driver */
+#undef CONFIG_SPI
 
 /* SPL */
 #ifndef CONFIG_NOR_BOOT
@@ -305,68 +308,6 @@
 	DFU_ALT_INFO_RAM \
 	DFU_ALT_INFO_NAND
 #endif
-
-/*
- * Default to using SPI for environment, etc.
- * 0x000000 - 0x020000 : SPL (128KiB)
- * 0x020000 - 0x0A0000 : U-Boot (512KiB)
- * 0x0A0000 - 0x0BFFFF : First copy of U-Boot Environment (128KiB)
- * 0x0C0000 - 0x0DFFFF : Second copy of U-Boot Environment (128KiB)
- * 0x0E0000 - 0x442000 : Linux Kernel
- * 0x442000 - 0x800000 : Userland
- */
-#if defined(CONFIG_SPI_BOOT)
-/* SPL related */
-#undef CONFIG_SPL_OS_BOOT		/* Not supported by existing map */
-#define CONFIG_SPL_SPI_SUPPORT
-#define CONFIG_SPL_SPI_FLASH_SUPPORT
-#define CONFIG_SPL_SPI_LOAD
-#define CONFIG_SYS_SPI_U_BOOT_OFFS	0x20000
-
-#define CONFIG_ENV_IS_IN_SPI_FLASH
-#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
-#define CONFIG_ENV_SPI_MAX_HZ		CONFIG_SF_DEFAULT_SPEED
-#define CONFIG_ENV_SECT_SIZE		(4 << 10) /* 4 KB sectors */
-#define CONFIG_ENV_OFFSET		(768 << 10) /* 768 KiB in */
-#define CONFIG_ENV_OFFSET_REDUND	(896 << 10) /* 896 KiB in */
-#define MTDIDS_DEFAULT			"nor0=m25p80-flash.0"
-#define MTDPARTS_DEFAULT		"mtdparts=m25p80-flash.0:128k(SPL)," \
-					"512k(u-boot),128k(u-boot-env1)," \
-					"128k(u-boot-env2),3464k(kernel)," \
-					"-(rootfs)"
-#elif defined(CONFIG_EMMC_BOOT)
-#define CONFIG_ENV_IS_IN_MMC
-#define CONFIG_SPL_ENV_SUPPORT
-#define CONFIG_SYS_MMC_ENV_DEV		1
-#define CONFIG_SYS_MMC_ENV_PART		2
-#define CONFIG_ENV_OFFSET		0x0
-#define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
-#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
-#elif defined(CONFIG_NOR_BOOT)
-#define CONFIG_ENV_IS_IN_FLASH
-#define CONFIG_ENV_SECT_SIZE		(128 << 10)	/* 128 KiB */
-#define CONFIG_ENV_OFFSET		(512 << 10)	/* 512 KiB */
-#define CONFIG_ENV_OFFSET_REDUND	(768 << 10)	/* 768 KiB */
-#define MTDIDS_DEFAULT			"nor0=physmap-flash.0"
-#define MTDPARTS_DEFAULT		"mtdparts=physmap-flash.0:" \
-					"512k(u-boot)," \
-					"128k(u-boot-env1)," \
-					"128k(u-boot-env2)," \
-					"4m(kernel),-(rootfs)"
-#elif defined(CONFIG_ENV_IS_IN_NAND)
-#define CONFIG_ENV_OFFSET		0x001c0000
-#define CONFIG_ENV_OFFSET_REDUND	0x001e0000
-#define CONFIG_SYS_ENV_SECT_SIZE	CONFIG_SYS_NAND_BLOCK_SIZE
-#elif !defined(CONFIG_ENV_IS_NOWHERE)
-/* Not NAND, SPI, NOR or eMMC env, so put ENV in a file on FAT */
-#define CONFIG_ENV_IS_IN_FAT
-#define FAT_ENV_INTERFACE		"mmc"
-#define FAT_ENV_DEVICE_AND_PART		"0:1"
-#define FAT_ENV_FILE			"uboot.env"
-#endif
-
-/* SPI flash. */
-#define CONFIG_SF_DEFAULT_SPEED		24000000
 
 /* Network. */
 #define CONFIG_PHY_GIGE
