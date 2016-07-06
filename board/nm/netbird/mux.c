@@ -144,6 +144,7 @@ static struct module_pin_mux rmii0_netbird_pin_mux[] = {
 	{OFFSET(rmii1_refclk), MODE(0) | PULLUDDIS | RXACTIVE},	/* RMII1_REFCLK */
 	{OFFSET(mdio_clk), MODE(0) | PULLUDDIS },	/* MDIO_CLK */
 	{OFFSET(mdio_data), MODE(0) | PULLUDEN | PULLUP_EN | RXACTIVE }, /* MDIO_DATA */
+	{OFFSET(xdma_event_intr0), MODE(3) }, /* CLK_OUT1 for MDIO (design option) */
 	{-1},
 };
 
