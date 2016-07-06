@@ -29,7 +29,6 @@
 #include <miiphy.h>
 #include <cpsw.h>
 #include <power/tps65217.h>
-#include <power/tps65218.h>
 #include <power/tps65910.h>
 #include <environment.h>
 #include <watchdog.h>
@@ -47,15 +46,6 @@ DECLARE_GLOBAL_DATA_PTR;
 #define GPIO_MUX_MII_CTRL	GPIO_TO_PIN(3, 10)
 #define GPIO_FET_SWITCH_CTRL	GPIO_TO_PIN(0, 7)
 #define GPIO_PHY_RESET		GPIO_TO_PIN(2, 5)
-
-#define NETBIRD_GPIO_RST_PHY_N	GPIO_TO_PIN(0, 16)
-#define NETBIRD_GPIO_PWR_GSM	GPIO_TO_PIN(1, 22)
-#define NETBIRD_GPIO_RST_GSM	GPIO_TO_PIN(1, 24)
-#define NETBIRD_GPIO_WLAN_EN	GPIO_TO_PIN(3, 10)
-#define NETBIRD_GPIO_BT_EN		GPIO_TO_PIN(3, 4)
-#define NETBIRD_GPIO_EN_GPS_ANT	GPIO_TO_PIN(2, 24)
-#define NETBIRD_GPIO_LED_A		GPIO_TO_PIN(1, 14)
-#define NETBIRD_GPIO_LED_B		GPIO_TO_PIN(1, 15)
 
 #if defined(CONFIG_SPL_BUILD) || \
 	(defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_DM_ETH))
@@ -118,14 +108,6 @@ static const struct ddr_data ddr3_beagleblack_data = {
 	.datawrsratio0 = MT41K256M16HA125E_PHY_WR_DATA,
 };
 
-static const struct ddr_data ddr3_netbird_data = {
-	/* Ratios were optimized by DDR3 training software from TI */
-	.datardsratio0 = 0x37,
-	.datawdsratio0 = 0x42,
-	.datafwsratio0 = 0x98,
-	.datawrsratio0 = 0x7a,
-};
-
 static const struct ddr_data ddr3_evm_data = {
 	.datardsratio0 = MT41J512M8RH125_RD_DQS,
 	.datawdsratio0 = MT41J512M8RH125_WR_DQS,
@@ -152,17 +134,6 @@ static const struct cmd_control ddr3_cmd_ctrl_data = {
 };
 
 static const struct cmd_control ddr3_beagleblack_cmd_ctrl_data = {
-	.cmd0csratio = MT41K256M16HA125E_RATIO,
-	.cmd0iclkout = MT41K256M16HA125E_INVERT_CLKOUT,
-
-	.cmd1csratio = MT41K256M16HA125E_RATIO,
-	.cmd1iclkout = MT41K256M16HA125E_INVERT_CLKOUT,
-
-	.cmd2csratio = MT41K256M16HA125E_RATIO,
-	.cmd2iclkout = MT41K256M16HA125E_INVERT_CLKOUT,
-};
-
-static const struct cmd_control ddr3_netbird_cmd_ctrl_data = {
 	.cmd0csratio = MT41K256M16HA125E_RATIO,
 	.cmd0iclkout = MT41K256M16HA125E_INVERT_CLKOUT,
 
@@ -212,16 +183,6 @@ static struct emif_regs ddr3_beagleblack_emif_reg_data = {
 	.sdram_tim1 = MT41K256M16HA125E_EMIF_TIM1,
 	.sdram_tim2 = MT41K256M16HA125E_EMIF_TIM2,
 	.sdram_tim3 = MT41K256M16HA125E_EMIF_TIM3,
-	.zq_config = MT41K256M16HA125E_ZQ_CFG,
-	.emif_ddr_phy_ctlr_1 = MT41K256M16HA125E_EMIF_READ_LATENCY,
-};
-
-static struct emif_regs ddr3_netbird_emif_reg_data = {
-	.sdram_config = MT41K256M16HA125E_EMIF_SDCFG,
-	.ref_ctrl = MT41K256M16HA125E_EMIF_SDREF,
-	.sdram_tim1 = 0x0aaae51b, /* From AM335x_DDR_register_calc_tool.xls */
-	.sdram_tim2 = 0x24437fda, /* From AM335x_DDR_register_calc_tool.xls */
-	.sdram_tim3 = 0x50ffe3ff, /* From AM335x_DDR_register_calc_tool.xls */
 	.zq_config = MT41K256M16HA125E_ZQ_CFG,
 	.emif_ddr_phy_ctlr_1 = MT41K256M16HA125E_EMIF_READ_LATENCY,
 };
@@ -377,18 +338,6 @@ void am33xx_spl_board_init(void)
 				       TPS65217_LDO_VOLTAGE_OUT_3_3,
 				       TPS65217_LDO_MASK))
 			puts("tps65217_reg_write failure\n");
-	} else if (board_is_nbhw16()) {
-		/* Set CPU speed to 600 MHZ */
-		dpll_mpu_opp100.m = MPUPLL_M_600;
-
-		/* Set CORE Frequencies to OPP100 */
-		do_setup_dpll(&dpll_core_regs, &dpll_core_opp100);
-
-		/* Clear th PFM Flag on DCDC4 */
-		if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_DCDC4, 0x00, 0x80)) {
-			puts ("tps65218_reg_write failure\n");
-		};
-
 	} else {
 		int sil_rev;
 
@@ -437,7 +386,7 @@ const struct dpll_params *get_dpll_ddr_params(void)
 
 	if (board_is_evm_sk())
 		return &dpll_ddr_evm_sk;
-	else if (board_is_bone_lt() || board_is_icev2() || board_is_nbhw16())
+	else if (board_is_bone_lt() || board_is_icev2())
 		return &dpll_ddr_bone_black;
 	else if (board_is_evm_15_or_later())
 		return &dpll_ddr_evm_sk;
@@ -479,14 +428,6 @@ const struct ctrl_ioregs ioregs_evmsk = {
 };
 
 const struct ctrl_ioregs ioregs_bonelt = {
-	.cm0ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
-	.cm1ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
-	.cm2ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
-	.dt0ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
-	.dt1ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
-};
-
-const struct ctrl_ioregs ioregs_netbird = {
 	.cm0ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
 	.cm1ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
 	.cm2ioctl		= MT41K256M16HA125E_IOCTRL_VALUE,
@@ -537,11 +478,6 @@ void sdram_init(void)
 			   &ddr3_beagleblack_data,
 			   &ddr3_beagleblack_cmd_ctrl_data,
 			   &ddr3_beagleblack_emif_reg_data, 0);
-	else if (board_is_nbhw16())
-		config_ddr(400, &ioregs_netbird,
-			   &ddr3_netbird_data,
-			   &ddr3_netbird_cmd_ctrl_data,
-			   &ddr3_netbird_emif_reg_data, 0);
 	else if (board_is_evm_15_or_later())
 		config_ddr(303, &ioregs_evm15, &ddr3_evm_data,
 			   &ddr3_evm_cmd_ctrl_data, &ddr3_evm_emif_reg_data, 0);
@@ -557,23 +493,7 @@ void sdram_init(void)
 
 #if (defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_SPL_BUILD)) || \
 	(defined(CONFIG_SPL_ETH_SUPPORT) && defined(CONFIG_SPL_BUILD))
-
-/**
- * RMII mode on ICEv2 board needs 50MHz clock. Given the clock
- * synthesizer With a capacitor of 18pF, and 25MHz input clock cycle
- * PLL1 gives an output of 100MHz. So, configuring the div2/3 as 2 to
- * give 50MHz output for Eth0 and 1.
- */
-static struct clk_synth cdce913_data = {
-	.id = 0x81,
-	.capacitor = 0x90,
-	.mux = 0x6d,
-	.pdiv2 = 0x2,
-	.pdiv3 = 0x2,
-};
-#endif
-
-static void request_and_set_gpio(int gpio, char *name, int value)
+static void request_and_set_gpio(int gpio, char *name)
 {
 	int ret;
 
@@ -589,7 +509,7 @@ static void request_and_set_gpio(int gpio, char *name, int value)
 		goto err_free_gpio;
 	}
 
-	gpio_set_value(gpio, value);
+	gpio_set_value(gpio, 1);
 
 	return;
 
@@ -597,8 +517,22 @@ err_free_gpio:
 	gpio_free(gpio);
 }
 
-#define REQUEST_AND_SET_GPIO(N)	request_and_set_gpio(N, #N, 1);
-#define REQUEST_AND_CLEAR_GPIO(N)	request_and_set_gpio(N, #N, 0);
+#define REQUEST_AND_SET_GPIO(N)	request_and_set_gpio(N, #N);
+
+/**
+ * RMII mode on ICEv2 board needs 50MHz clock. Given the clock
+ * synthesizer With a capacitor of 18pF, and 25MHz input clock cycle
+ * PLL1 gives an output of 100MHz. So, configuring the div2/3 as 2 to
+ * give 50MHz output for Eth0 and 1.
+ */
+static struct clk_synth cdce913_data = {
+	.id = 0x81,
+	.capacitor = 0x90,
+	.mux = 0x6d,
+	.pdiv2 = 0x2,
+	.pdiv3 = 0x2,
+};
+#endif
 
 /*
  * Basic board specific setup.  Pinmux has been handled already.
@@ -629,23 +563,6 @@ int board_init(void)
 		}
 	}
 #endif
-
-	if (board_is_nbhw16()) {
-		REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_RST_GSM);
-		udelay(10000);
-		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_PWR_GSM);
-		mdelay(1200);
-		gpio_set_value(NETBIRD_GPIO_PWR_GSM, 0);
-		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_LED_A);
-		REQUEST_AND_SET_GPIO(NETBIRD_GPIO_RST_PHY_N);
-		REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_WLAN_EN);
-		REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_BT_EN);
-		/* There are two funcions on the same mux mode for MMC2_DAT7 we want
-		 * to use RMII2_CRS_DV so we need to set SMA2 Register to 1
-		 * See SPRS717J site 49 (10)*/
-		#define SMA2_REGISTER (CTRL_BASE + 0x1320)
-		writel(0x01, SMA2_REGISTER); /* Select RMII2_CRS_DV instead of MMC2_DAT7 */
-	}
 
 	return 0;
 }
@@ -720,17 +637,6 @@ static struct cpsw_platform_data cpsw_data = {
 	  defined(CONFIG_USB_ETHER) && defined(CONFIG_MUSB_GADGET)) && \
 	 !defined(CONFIG_SPL_BUILD))
 
-static void set_mac_address(int index, uchar mac[6])
-{
-	/* Then take mac from bd */
-	if (is_valid_ethaddr(mac)) {
-		eth_setenv_enetaddr_by_index("eth", index, mac);
-	}
-	else {
-		printf("No valid MAC found in boarddescriptor");
-	}
-}
-
 /*
  * This function will:
  * Read the eFuse for MAC addresses, and set ethaddr/eth1addr/usbnet_devaddr
@@ -745,50 +651,53 @@ static void set_mac_address(int index, uchar mac[6])
 int board_eth_init(bd_t *bis)
 {
 	int rv, n = 0;
-	uint8_t mac_addr0[6];
-	uint8_t mac_addr1[6];
+	uint8_t mac_addr[6];
+	uint32_t mac_hi, mac_lo;
 	__maybe_unused struct ti_am_eeprom *header;
-	int boot_partition;
 
+	/* try reading mac address from efuse */
+	mac_lo = readl(&cdev->macid0l);
+	mac_hi = readl(&cdev->macid0h);
+	mac_addr[0] = mac_hi & 0xFF;
+	mac_addr[1] = (mac_hi & 0xFF00) >> 8;
+	mac_addr[2] = (mac_hi & 0xFF0000) >> 16;
+	mac_addr[3] = (mac_hi & 0xFF000000) >> 24;
+	mac_addr[4] = mac_lo & 0xFF;
+	mac_addr[5] = (mac_lo & 0xFF00) >> 8;
 
 #if (defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_SPL_BUILD)) || \
 	(defined(CONFIG_SPL_ETH_SUPPORT) && defined(CONFIG_SPL_BUILD))
+	if (!getenv("ethaddr")) {
+		printf("<ethaddr> not set. Validating first E-fuse MAC\n");
+
+		if (is_valid_ethaddr(mac_addr))
+			eth_setenv_enetaddr("ethaddr", mac_addr);
+	}
 
 #ifdef CONFIG_DRIVER_TI_CPSW
 
-	if (board_is_nbhw16()) {
-		/* Clock should be 2MHz */
-		cpsw_data.mdio_div = 0x3E;
+	mac_lo = readl(&cdev->macid1l);
+	mac_hi = readl(&cdev->macid1h);
+	mac_addr[0] = mac_hi & 0xFF;
+	mac_addr[1] = (mac_hi & 0xFF00) >> 8;
+	mac_addr[2] = (mac_hi & 0xFF0000) >> 16;
+	mac_addr[3] = (mac_hi & 0xFF000000) >> 24;
+	mac_addr[4] = mac_lo & 0xFF;
+	mac_addr[5] = (mac_lo & 0xFF00) >> 8;
+
+	if (!getenv("eth1addr")) {
+		if (is_valid_ethaddr(mac_addr))
+			eth_setenv_enetaddr("eth1addr", mac_addr);
 	}
 
 	if (read_eeprom() < 0)
 		puts("Could not get board ID.\n");
 
-	board_ti_get_eth_mac_addr(0, mac_addr0);
-	board_ti_get_eth_mac_addr(1, mac_addr1);
-
-	set_mac_address(0, mac_addr0);
-	set_mac_address(1, mac_addr1);
-
-	boot_partition = get_boot_partition();
-	if (boot_partition > 1) {
-		boot_partition = 0;
-	}
-
-	/* mmcblk0p1 => u-boot, mmcblk0p2 => root0 so +2 */
-	setenv_ulong("root_part", boot_partition + 2);
-
 	if (board_is_bone() || board_is_bone_lt() ||
-		board_is_idk()) {
+	    board_is_idk()) {
 		writel(MII_MODE_ENABLE, &cdev->miisel);
 		cpsw_slaves[0].phy_if = cpsw_slaves[1].phy_if =
 				PHY_INTERFACE_MODE_MII;
-	} else if (board_is_nbhw16()) {
-		writel(RMII_MODE_ENABLE | RMII_CHIPCKL_ENABLE, &cdev->miisel);
-		cpsw_slaves[0].phy_if = PHY_INTERFACE_MODE_RMII;
-		cpsw_slaves[1].phy_if = PHY_INTERFACE_MODE_RMII;
-		cpsw_slaves[0].phy_addr = 0;
-		cpsw_slaves[1].phy_addr = 1;
 	} else if (board_is_icev2()) {
 		writel(RMII_MODE_ENABLE | RMII_CHIPCKL_ENABLE, &cdev->miisel);
 		cpsw_slaves[0].phy_if = PHY_INTERFACE_MODE_RMII;
@@ -832,8 +741,8 @@ int board_eth_init(bd_t *bis)
 #endif
 #if defined(CONFIG_USB_ETHER) && \
 	(!defined(CONFIG_SPL_BUILD) || defined(CONFIG_SPL_USBETH_SUPPORT))
-	if (is_valid_ethaddr(mac_addr0))
-		eth_setenv_enetaddr("usbnet_devaddr", mac_addr0);
+	if (is_valid_ethaddr(mac_addr))
+		eth_setenv_enetaddr("usbnet_devaddr", mac_addr);
 
 	rv = usb_eth_initialize(bis);
 	if (rv < 0)
@@ -855,8 +764,6 @@ int board_fit_config_name_match(const char *name)
 	else if (board_is_bone() && !strcmp(name, "am335x-bone"))
 		return 0;
 	else if (board_is_bone_lt() && !strcmp(name, "am335x-boneblack"))
-		return 0;
-	else if (board_is_nbhw16() && !strcmp(name, "am335x-nbhw16"))
 		return 0;
 	else if (board_is_evm_sk() && !strcmp(name, "am335x-evmsk"))
 		return 0;

@@ -267,8 +267,6 @@ board_ti_get_eth_mac_addr(int index,
 	if (index < 0 || index >= TI_EEPROM_HDR_NO_OF_MAC_ADDR)
 		goto fail;
 
-    printf("Get MAC from bd\n");
-
 	memcpy(mac_addr, ep->mac_addr[index], TI_EEPROM_HDR_ETH_ALEN);
 	return;
 

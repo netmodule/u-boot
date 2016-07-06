@@ -25,12 +25,13 @@
  *                         Added bufLen parameter for BD_GetInfo()
  *                         Fixed wrong sizeof type in GetPartition()
  *                         Changed 64 bit type to "long long" from struct
- *                         Added BD_VerifySha1Hmac() function 
+ *                         Added BD_VerifySha1Hmac() function
  *****************************************************************************/
 
 /*--- includes --------------------------------------------------------------*/
 
 #include "bdparser.h"             /* own header file */
+#include <asm/io.h>
 
 
 /* Platform specific include files */
@@ -71,14 +72,14 @@
 /*--- local variables -------------------------------------------------------*/
 
 static const BD_Info bd_info[] = {
-  { BD_Serial             , BD_Type_String     , "serial"             }, 
-  { BD_Production_Date    , BD_Type_Date       , "proddate"           }, 
-  { BD_Hw_Ver             , BD_Type_UInt8      , "hwver"              }, 
-  { BD_Hw_Rel             , BD_Type_UInt8      , "hwrel"              }, 
+  { BD_Serial             , BD_Type_String     , "serial"             },
+  { BD_Production_Date    , BD_Type_Date       , "proddate"           },
+  { BD_Hw_Ver             , BD_Type_UInt8      , "hwver"              },
+  { BD_Hw_Rel             , BD_Type_UInt8      , "hwrel"              },
   { BD_Prod_Name          , BD_Type_String     , "prod_name"          },
   { BD_Prod_Variant       , BD_Type_UInt16     , "prod_variant"       },
   { BD_Prod_Compatibility , BD_Type_String     , "prod_compatibility" },
-    
+
   { BD_Eth_Mac            , BD_Type_MAC        , "eth_mac"            },
   { BD_Ip_Addr            , BD_Type_IPV4       , "ip_addr"            },
   { BD_Ip_Netmask         , BD_Type_IPV4       , "ip_netmask"         },
@@ -86,7 +87,7 @@ static const BD_Info bd_info[] = {
 
   { BD_Usb_Device_Id      , BD_Type_UInt16     , "usb_device_id"      },
   { BD_Usb_Vendor_Id      , BD_Type_UInt16     , "usb_vendor_id"      },
-        
+
   { BD_Ram_Size           , BD_Type_UInt32     , "ram_size"           },
   { BD_Ram_Size64         , BD_Type_UInt64     , "ram_size64"         },
   { BD_Flash_Size         , BD_Type_UInt32     , "flash_size"         },
@@ -101,7 +102,7 @@ static const BD_Info bd_info[] = {
 
   { BD_Partition          , BD_Type_Partition  , "partition"          },
   { BD_Partition64        , BD_Type_Partition64, "partition64"        },
-    
+
   { BD_Lcd_Type           , BD_Type_UInt16     , "lcd_type"           },
   { BD_Lcd_Backlight      , BD_Type_UInt8      , "lcd_backlight"      },
   { BD_Lcd_Contrast       , BD_Type_UInt8      , "lcd_contrast"       },
@@ -111,7 +112,7 @@ static const BD_Info bd_info[] = {
   { BD_Hmac_Sha1_4        , BD_Type_HMAC       , "hmac-sha1"          },
 
   { BD_Ui_Adapter_Type    , BD_Type_UInt16     , "ui_adapter_type"    },
-  
+
   /* Guard entry, must be last in array (don't remove) */
   { BD_End                , BD_Type_End        , 0                    },
 };
@@ -119,7 +120,7 @@ static const BD_Info bd_info[] = {
 
 /*--- local functions -------------------------------------------------------*/
 
-static void bd_safeStrCpy( char* pDest, bd_size_t destLen, 
+static void bd_safeStrCpy( char* pDest, bd_size_t destLen,
                            const char* pSrc, bd_size_t srcLen )
 {
   bd_size_t   bytesToCopy = 0;
@@ -160,8 +161,8 @@ static bd_uint16_t bd_getUInt16( const void* pBuf )
   BD_ASSERT( pBuf != 0 );
 
   pui8Buf = (const bd_uint8_t*)pBuf;
-  value =   (pui8Buf[0] <<  8) 
-          | (pui8Buf[1] <<  0); 
+  value =   (pui8Buf[0] <<  8)
+          | (pui8Buf[1] <<  0);
 
   return value;
 }
@@ -176,10 +177,10 @@ static bd_uint32_t bd_getUInt32( const void* pBuf )
   BD_ASSERT( pBuf != 0 );
 
   pui8Buf = (const bd_uint8_t*)pBuf;
-  value =   (pui8Buf[0] << 24) 
-          | (pui8Buf[1] << 16) 
-          | (pui8Buf[2] <<  8) 
-          | (pui8Buf[3] <<  0); 
+  value =   (pui8Buf[0] << 24)
+          | (pui8Buf[1] << 16)
+          | (pui8Buf[2] <<  8)
+          | (pui8Buf[3] <<  0);
 
   return value;
 }
@@ -196,7 +197,7 @@ static bd_uint64_t bd_getUInt64( const void* pBuf )
   pui8Buf = (const bd_uint8_t*)pBuf;
 
   value = 0;
-  for (i=0; i<8; i++) 
+  for (i=0; i<8; i++)
   {
     value <<= 8;
     value |= pui8Buf[i];
@@ -207,7 +208,7 @@ static bd_uint64_t bd_getUInt64( const void* pBuf )
 
 /*---------------------------------------------------------------------------*/
 
-static bd_bool_t bd_getInfo( bd_uint16_t tag, BD_Type* pType, char* pName, bd_size_t bufLen ) 
+static bd_bool_t bd_getInfo( bd_uint16_t tag, BD_Type* pType, char* pName, bd_size_t bufLen )
 {
   bd_bool_t rc    = BD_FALSE;    /* assume error */
   int       index;
@@ -221,13 +222,13 @@ static bd_bool_t bd_getInfo( bd_uint16_t tag, BD_Type* pType, char* pName, bd_si
       /* Found desired entry */
       rc = BD_TRUE;
 
-      if( pType != 0 ) 
+      if( pType != 0 )
       {
         /* Fill in type information */
         *pType = bd_info[index].type;
       }
 
-      if( pName != 0 ) 
+      if( pName != 0 )
       {
         /* Fill in tag name */
         bd_safeStrCpy( pName, bufLen, bd_info[index].pName, strlen(bd_info[index].pName) );
@@ -249,66 +250,66 @@ static bd_bool_t bd_getNextEntry( const BD_Context* pCtx, BD_Entry* pEntry )
   bd_uint16_t       currTag = 0;
   bd_uint16_t       currLen = 0;
   bd_bool_t         first   = BD_FALSE;    /* assume error */
-  
+
   BD_ASSERT( pCtx != 0 );
   BD_ASSERT( pEntry != 0 );
 
   /* Make sure we don't read beyond entry is NULL */
-  if ( pEntry == 0 ) 
+  if ( pEntry == 0 )
   {
     return rc;
   }
-  
+
   /* Check for last entry*/
-  if ( pEntry->entry >= pCtx->entries ) 
+  if ( pEntry->entry >= pCtx->entries )
   {
     return rc;
   }
-  
+
   /* For the first entry starts with the context buffer else the entry buffer minus header 4 bytes */
-  if ( ( pEntry->pData == 0 ) ) 
+  if ( ( pEntry->pData == 0 ) )
   {
     pTemp = pCtx->pData;
     first = BD_TRUE;
   }
-  else 
+  else
   {
     pTemp = pEntry->pData - 4;
     first = BD_FALSE;
   }
-    
+
   /* Make sure we don't read beyond data buffer is 0 */
   if ( pTemp == 0 )
   {
     BD_ASSERT(BD_FALSE);
     return rc;
   }
-  
+
   /* Make sure we don't read beyond data buffer is valid range */
   if ( pTemp < pCtx->pData )
   {
     BD_ASSERT(BD_FALSE);
     return rc;
   }
-  
+
   /* Make sure we don't read beyond data buffer when getting next tag/len */
   if ( (pTemp + 4) > pCtx->pDataEnd )
   {
     BD_ASSERT(BD_FALSE);
     return rc;
   }
-  
+
   /* Read tag/length of current entry */
   currTag = bd_getUInt16( pTemp + 0 );
   currLen = bd_getUInt16( pTemp + 2 );
-  
+
   /* Validate length field */
   if ( currLen > BD_MAX_ENTRY_LEN )
   {
     BD_ASSERT(BD_FALSE);
     return rc;
   }
-  
+
   /* Must not exceed data buffer */
   if ( (pTemp + 4 + currLen) > pCtx->pDataEnd )
   {
@@ -316,22 +317,22 @@ static bd_bool_t bd_getNextEntry( const BD_Context* pCtx, BD_Entry* pEntry )
     return rc;
   }
 
-  if( first==BD_FALSE ) 
+  if( first==BD_FALSE )
   {
     /* Advance to next entry */
     pTemp += (4 + currLen);
-    
+
     /* Make sure we don't read beyond data buffer when getting next tag/len */
     if ( (pTemp + 4) > pCtx->pDataEnd )
     {
       BD_ASSERT(BD_FALSE);
       return rc;
     }
-    
+
     /* Read tag/length of current entry */
     currTag = bd_getUInt16( pTemp + 0 );
     currLen = bd_getUInt16( pTemp + 2 );
-    
+
     /* Validate length field */
     if ( currLen > BD_MAX_ENTRY_LEN )
     {
@@ -339,7 +340,7 @@ static bd_bool_t bd_getNextEntry( const BD_Context* pCtx, BD_Entry* pEntry )
       return rc;
     }
   }
-  
+
   /* Fill the entry structure */
   pEntry->tag   = currTag;
   pEntry->len   = currLen;
@@ -352,7 +353,7 @@ static bd_bool_t bd_getNextEntry( const BD_Context* pCtx, BD_Entry* pEntry )
 
 /*---------------------------------------------------------------------------*/
 
-static const void* bd_findEntry( const BD_Context* pCtx, bd_uint16_t tag, 
+static const void* bd_findEntry( const BD_Context* pCtx, bd_uint16_t tag,
                                  bd_uint_t index, bd_uint16_t* pLen )
 {
   const void*         pResult   = 0;
@@ -379,25 +380,25 @@ static const void* bd_findEntry( const BD_Context* pCtx, bd_uint16_t tag,
   {
     bd_uint16_t  currTag = 0;
     bd_uint16_t  currLen = 0;
-  
+
     /* Make sure we don't read beyond data buffer when getting next tag/len */
     if ( (pTemp + 4) > pCtx->pDataEnd )
     {
       BD_ASSERT(BD_FALSE);
       break;
     }
-  
+
     /* Read tag/length of current entry */
     currTag = bd_getUInt16( pTemp + 0 );
     currLen = bd_getUInt16( pTemp + 2 );
- 
+
     /* Validate length field */
     if ( currLen > BD_MAX_ENTRY_LEN )
     {
       BD_ASSERT(BD_FALSE);
       break;
     }
-    
+
     /* Must not exceed data buffer */
     if ( (pTemp + 4 + currLen) > pCtx->pDataEnd )
     {
@@ -427,7 +428,7 @@ static const void* bd_findEntry( const BD_Context* pCtx, bd_uint16_t tag,
     }
     else if ( currTag == 0x0000 )
     {
-      /* Sorry, entry not found -> aborting */ 
+      /* Sorry, entry not found -> aborting */
       break;
     }
 
@@ -448,8 +449,8 @@ bd_bool_t BD_CheckHeader( BD_Context* pCtx, const void* pHeader )
 
   /* Argument check */
 
-  if (    (pCtx    == 0) 
-       || (pHeader == 0) 
+  if (    (pCtx    == 0)
+       || (pHeader == 0)
      )
   {
     return BD_FALSE;
@@ -476,15 +477,15 @@ bd_bool_t BD_CheckHeader( BD_Context* pCtx, const void* pHeader )
 
     payloadLen = bd_getUInt16( pTemp+4 );
     checksum = bd_getUInt16( pTemp+6 );
-    
+
     /* Validate length, abort on unreasonable values */
-    
+
     if ( payloadLen <= BD_MAX_LENGTH )
     {
       pCtx->size        = payloadLen;
       pCtx->checksum    = checksum;
       pCtx->headerOk    = BD_TRUE;
-      
+
       rc = BD_TRUE;
     }
     else
@@ -508,10 +509,10 @@ bd_bool_t BD_ImportData( BD_Context* pCtx, const void* pData )
   bd_bool_t           rc    = BD_FALSE;    /* assume error */
   bd_uint16_t         tmpChecksum = 0;
   size_t              i;
-  
+
   /* Argument check */
 
-  if (    (pCtx  == 0) 
+  if (    (pCtx  == 0)
        || (pData == 0)
        || !pCtx->headerOk         /* BD_CheckHeader() has not yet been called */
      )
@@ -526,32 +527,32 @@ bd_bool_t BD_ImportData( BD_Context* pCtx, const void* pData )
   pCtx->entries   = 0;
   pCtx->pData     = (const bd_uint8_t*)pData;
   pCtx->pDataEnd  = pCtx->pData + pCtx->size;
-  
+
   pTemp = (const bd_uint8_t*)pCtx->pData;
   for (;;)
   {
     bd_uint16_t  tag = 0;
     bd_uint16_t  len = 0;
-  
+
     /* Make sure we don't read beyond data buffer when getting next tag/len */
     if ( (pTemp + 4) > pCtx->pDataEnd )
     {
       /* @@@ RS: This would be an error */
       break;
     }
-  
+
     /* Read tag/length of current entry */
     tag = bd_getUInt16( pTemp + 0 );
     len = bd_getUInt16( pTemp + 2 );
     pTemp += 4;
- 
+
     /* Validate length field */
     if ( len > BD_MAX_ENTRY_LEN )
     {
       /* @@@ RS: This would be an error */
       break;
     }
-    
+
     /* Must not exceed data buffer */
     if ( (pTemp + len) > pCtx->pDataEnd )
     {
@@ -571,26 +572,26 @@ bd_bool_t BD_ImportData( BD_Context* pCtx, const void* pData )
 
     pCtx->entries++;
   }
-  
+
   /* If parsing was Ok and header contained a checksum, verify it */
   if ( rc && ( pCtx->checksum != 0 ) )
   {
     /* Reset pointer to the start of the data/payload buffer */
     pTemp = (const bd_uint8_t*)pCtx->pData;
-    
+
     /* Compute running byte checksum */
     for (i = 0; i < pCtx->size; i++)
     {
       tmpChecksum = (bd_uint16_t)( (tmpChecksum + pTemp[i]) & 0xFFFF );
     }
-    
+
     if ( tmpChecksum != pCtx->checksum )
     {
       /* Checksum does not match */
       rc = BD_FALSE;
     }
   }
-  
+
   if ( rc )
   {
     /* Everything ok */
@@ -609,7 +610,7 @@ bd_bool_t BD_ExistsEntry( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t ind
 
   /* Argument check */
 
-  if (    (pCtx == 0) 
+  if (    (pCtx == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
      )
@@ -632,7 +633,7 @@ bd_bool_t BD_ExistsEntry( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t ind
 bd_bool_t BD_GetInfo( bd_uint16_t tag, BD_Type* pType, char *pName, bd_size_t bufLen )
 {
   /*
-   * It is allowed to call this function with either pType or pName 
+   * It is allowed to call this function with either pType or pName
    * set to 0. In this case the fields will not be filled out
    */
   return bd_getInfo( tag, pType, pName, bufLen );
@@ -643,7 +644,7 @@ bd_bool_t BD_GetInfo( bd_uint16_t tag, BD_Type* pType, char *pName, bd_size_t bu
 bd_bool_t BD_InitEntry( BD_Entry* pEntry )
 {
   /* Argument check */
-  if ( pEntry == 0 ) 
+  if ( pEntry == 0 )
   {
     return BD_FALSE;
   }
@@ -659,7 +660,7 @@ bd_bool_t BD_GetNextEntry( const BD_Context* pCtx, BD_Entry* pEntry )
 {
   /* Argument check */
 
-  if (    (pCtx == 0) 
+  if (    (pCtx == 0)
        || !pCtx->initialized
        || (pEntry == 0)
      )
@@ -672,7 +673,7 @@ bd_bool_t BD_GetNextEntry( const BD_Context* pCtx, BD_Entry* pEntry )
 
 /*---------------------------------------------------------------------------*/
 
-bd_bool_t BD_GetVoid( const BD_Context* pCtx, bd_uint16_t tag, 
+bd_bool_t BD_GetVoid( const BD_Context* pCtx, bd_uint16_t tag,
                       bd_uint_t index, bd_bool_t* pResult )
 {
   const void*   pData   = 0;            /* pointer to entry data */
@@ -680,8 +681,8 @@ bd_bool_t BD_GetVoid( const BD_Context* pCtx, bd_uint16_t tag,
 
   /* Argument check */
 
-  if (    (pCtx == 0) 
-       || (pResult == 0) 
+  if (    (pCtx == 0)
+       || (pResult == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
      )
@@ -694,19 +695,19 @@ bd_bool_t BD_GetVoid( const BD_Context* pCtx, bd_uint16_t tag,
 
   /* Try to find desired entry */
   pData = bd_findEntry( pCtx, tag, index, &len );
-  
+
   /* Void tags necessarily have a length of 0 */
   if ( (pData != 0) && (len == 0) )
   {
     *pResult = BD_TRUE;
   }
-  
+
   return BD_TRUE;
 }
 
 /*---------------------------------------------------------------------------*/
 
-bd_bool_t BD_GetUInt8( const BD_Context* pCtx, bd_uint16_t tag, 
+bd_bool_t BD_GetUInt8( const BD_Context* pCtx, bd_uint16_t tag,
                        bd_uint_t index, bd_uint8_t* pResult )
 {
   const void*   pData   = 0;            /* pointer to entry data */
@@ -715,8 +716,8 @@ bd_bool_t BD_GetUInt8( const BD_Context* pCtx, bd_uint16_t tag,
 
   /* Argument check */
 
-  if (    (pCtx == 0) 
-       || (pResult == 0) 
+  if (    (pCtx == 0)
+       || (pResult == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
      )
@@ -740,7 +741,7 @@ bd_bool_t BD_GetUInt8( const BD_Context* pCtx, bd_uint16_t tag,
 
 /*---------------------------------------------------------------------------*/
 
-bd_bool_t BD_GetUInt16( const BD_Context* pCtx, bd_uint16_t tag, 
+bd_bool_t BD_GetUInt16( const BD_Context* pCtx, bd_uint16_t tag,
                         bd_uint_t index, bd_uint16_t* pResult )
 {
   const void*   pData   = 0;          /* pointer to entry data */
@@ -749,8 +750,8 @@ bd_bool_t BD_GetUInt16( const BD_Context* pCtx, bd_uint16_t tag,
 
   /* Argument check */
 
-  if (    (pCtx == 0) 
-       || (pResult == 0) 
+  if (    (pCtx == 0)
+       || (pResult == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
      )
@@ -766,7 +767,7 @@ bd_bool_t BD_GetUInt16( const BD_Context* pCtx, bd_uint16_t tag,
   if ( (pData != 0) && (len == 2) )
   {
     *pResult = bd_getUInt16( pData );
-    
+
     rc = BD_TRUE;
   }
 
@@ -775,7 +776,7 @@ bd_bool_t BD_GetUInt16( const BD_Context* pCtx, bd_uint16_t tag,
 
 /*---------------------------------------------------------------------------*/
 
-bd_bool_t BD_GetUInt32( const BD_Context* pCtx, bd_uint16_t tag, 
+bd_bool_t BD_GetUInt32( const BD_Context* pCtx, bd_uint16_t tag,
                         bd_uint_t index, bd_uint32_t* pResult )
 {
   const void*     pData   = 0;          /* pointer to entry data */
@@ -784,8 +785,8 @@ bd_bool_t BD_GetUInt32( const BD_Context* pCtx, bd_uint16_t tag,
 
   /* Argument check */
 
-  if (    (pCtx == 0) 
-       || (pResult == 0) 
+  if (    (pCtx == 0)
+       || (pResult == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
      )
@@ -801,7 +802,7 @@ bd_bool_t BD_GetUInt32( const BD_Context* pCtx, bd_uint16_t tag,
   if ( (pData != 0) && (len == 4) )
   {
     *pResult = bd_getUInt32( pData );
-   
+
     rc = BD_TRUE;
   }
 
@@ -810,7 +811,7 @@ bd_bool_t BD_GetUInt32( const BD_Context* pCtx, bd_uint16_t tag,
 
 /*---------------------------------------------------------------------------*/
 
-bd_bool_t BD_GetUInt64( const BD_Context* pCtx, bd_uint16_t tag, 
+bd_bool_t BD_GetUInt64( const BD_Context* pCtx, bd_uint16_t tag,
                         bd_uint_t index, bd_uint64_t* pResult )
 {
   const void*     pData   = 0;          /* pointer to entry data */
@@ -819,8 +820,8 @@ bd_bool_t BD_GetUInt64( const BD_Context* pCtx, bd_uint16_t tag,
 
   /* Argument check */
 
-  if (    (pCtx == 0) 
-       || (pResult == 0) 
+  if (    (pCtx == 0)
+       || (pResult == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
      )
@@ -836,7 +837,7 @@ bd_bool_t BD_GetUInt64( const BD_Context* pCtx, bd_uint16_t tag,
   if ( (pData != 0) && (len == 8) )
   {
     *pResult = bd_getUInt64( pData );
-    
+
     rc = BD_TRUE;
   }
 
@@ -845,7 +846,7 @@ bd_bool_t BD_GetUInt64( const BD_Context* pCtx, bd_uint16_t tag,
 
 /*---------------------------------------------------------------------------*/
 
-bd_bool_t BD_GetIPv4( const BD_Context* pCtx, bd_uint16_t tag, 
+bd_bool_t BD_GetIPv4( const BD_Context* pCtx, bd_uint16_t tag,
                       bd_uint_t index, bd_uint32_t* pResult )
 {
   const void*   pData   = 0;          /* pointer to entry data */
@@ -854,8 +855,8 @@ bd_bool_t BD_GetIPv4( const BD_Context* pCtx, bd_uint16_t tag,
 
   /* Argument check */
 
-  if (    (pCtx == 0) 
-       || (pResult == 0) 
+  if (    (pCtx == 0)
+       || (pResult == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
      )
@@ -871,7 +872,7 @@ bd_bool_t BD_GetIPv4( const BD_Context* pCtx, bd_uint16_t tag,
   if ( (pData != 0) && (len == 4) )
   {
     *pResult = bd_getUInt32( pData );
-    
+
     rc = BD_TRUE;
   }
 
@@ -880,7 +881,7 @@ bd_bool_t BD_GetIPv4( const BD_Context* pCtx, bd_uint16_t tag,
 
 /*---------------------------------------------------------------------------*/
 
-bd_bool_t BD_GetMAC( const BD_Context* pCtx, bd_uint16_t tag, 
+bd_bool_t BD_GetMAC( const BD_Context* pCtx, bd_uint16_t tag,
                      bd_uint_t index, bd_uint8_t pResult[6] )
 {
   const void*   pData   = 0;          /* pointer to entry data */
@@ -889,8 +890,8 @@ bd_bool_t BD_GetMAC( const BD_Context* pCtx, bd_uint16_t tag,
 
   /* Argument check */
 
-  if (    (pCtx == 0) 
-       || (pResult == 0) 
+  if (    (pCtx == 0)
+       || (pResult == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
      )
@@ -915,7 +916,7 @@ bd_bool_t BD_GetMAC( const BD_Context* pCtx, bd_uint16_t tag,
 
 /*---------------------------------------------------------------------------*/
 
-bd_bool_t BD_GetString( const BD_Context* pCtx, bd_uint16_t tag, 
+bd_bool_t BD_GetString( const BD_Context* pCtx, bd_uint16_t tag,
                         bd_uint_t index, char* pResult, bd_size_t bufLen )
 {
   const void*   pData   = 0;          /* pointer to entry data */
@@ -924,8 +925,8 @@ bd_bool_t BD_GetString( const BD_Context* pCtx, bd_uint16_t tag,
 
   /* Argument check */
 
-  if (    (pCtx == 0) 
-       || (pResult == 0) 
+  if (    (pCtx == 0)
+       || (pResult == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
        || (bufLen < 1)
@@ -953,7 +954,7 @@ bd_bool_t BD_GetString( const BD_Context* pCtx, bd_uint16_t tag,
 
 /*---------------------------------------------------------------------------*/
 
-bd_bool_t BD_GetBlob( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index, 
+bd_bool_t BD_GetBlob( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index,
                       char* pResult, bd_size_t bufLen, bd_size_t* pReadLen)
 {
   const void*   pData   = 0;          /* pointer to entry data */
@@ -961,9 +962,9 @@ bd_bool_t BD_GetBlob( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t index,
   bd_bool_t     rc      = BD_FALSE;   /* assume error */
 
   /* Argument check */
-  
-  if (    (pCtx == 0) 
-       || (pResult == 0) 
+
+  if (    (pCtx == 0)
+       || (pResult == 0)
        || (pReadLen == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
@@ -1003,8 +1004,8 @@ bd_bool_t BD_GetPartition( const BD_Context* pCtx, bd_uint16_t tag,
 
   /* Argument check */
 
-  if (    (pCtx == 0) 
-       || (pResult == 0) 
+  if (    (pCtx == 0)
+       || (pResult == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
      )
@@ -1052,15 +1053,22 @@ bd_bool_t BD_GetPartition64( const BD_Context* pCtx, bd_uint16_t tag,
 
   /* Argument check */
 
-  if (    (pCtx == 0) 
-       || (pResult == 0) 
+    if (pCtx == 0) {
+        return BD_FALSE;
+    }
+    writel(1<<14, 0x4804c13c); /* set gpio out */
+  if ( (pResult == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
      )
   {
+mdelay(1000);
+writel(1<<14, 0x4804c190); /* set gpio out */
     return BD_FALSE;
   }
 
+mdelay(1000);
+writel(1<<14, 0x4804c190); /* set gpio out */
   /* Clear result */
   memset( pResult, 0x00, sizeof(BD_PartitionEntry64) );
 
@@ -1108,8 +1116,8 @@ bd_bool_t BD_VerifySha1Hmac( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t 
 
   /* Argument check */
 
-  if (    (pCtx == 0) 
-       || (pKey == 0) 
+  if (    (pCtx == 0)
+       || (pKey == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
      )
@@ -1127,7 +1135,7 @@ bd_bool_t BD_VerifySha1Hmac( const BD_Context* pCtx, bd_uint16_t tag, bd_uint_t 
     hashDataLen = bd_getUInt16(pData);
     pData += 2;
     BD_ASSERT( hashDataLen < BD_MAX_LENGTH );
-    
+
     /* Remember hash value specified in tag */
     pRefHash = pData;
     pData += 4;
@@ -1162,10 +1170,10 @@ static void bd_testHelpers( void )
   char                    tempBuf[4];
 
   t16 = bd_getUInt16( data );
-  BD_ASSERT( t16 == 0x1234 );  
-  
+  BD_ASSERT( t16 == 0x1234 );
+
   t32 = bd_getUInt32( data );
-  BD_ASSERT( t32 == 0x12345678 );  
+  BD_ASSERT( t32 == 0x12345678 );
 
   t64 = bd_getUInt64( data );
   BD_ASSERT( t64 == 0x123456789abcdef0ULL );
@@ -1202,7 +1210,7 @@ static void bd_testCheckHeader( void )
 
   BD_Context    bdCtx;
   bd_bool_t     rc;
-  
+
 
   /* No context, no header */
   rc = BD_CheckHeader( 0, 0 );
@@ -1243,7 +1251,7 @@ static void bd_testImport( void )
 
   BD_Context    bdCtx;
   bd_bool_t     rc;
-  
+
   /* Case 0: End tag only */
   rc = BD_CheckHeader( &bdCtx, hdr1 );
   BD_ASSERT( rc );
@@ -1256,7 +1264,7 @@ static void bd_testImport( void )
   rc = BD_CheckHeader( &bdCtx, hdr2 );
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, data2 );
-  BD_ASSERT( rc );  
+  BD_ASSERT( rc );
   BD_ASSERT( bdCtx.initialized );
   BD_ASSERT( bdCtx.entries == 1 );
 }
@@ -1276,16 +1284,16 @@ static void bd_testChecksum( void )
   /* 1 void tag + end tag without checksum */
   static const bd_uint8_t hdr3[]   = { 'B', 'D', 'V', '1', 0x00, 0x08, 0x00, 0x00 };
   static const bd_uint8_t data3[]  = { 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    
+
   BD_Context    bdCtx;
   bd_bool_t     rc;
 
-  
+
   /* Case 0: valid checksum */
   rc = BD_CheckHeader( &bdCtx, hdr1 );
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, data1 );
-  BD_ASSERT( rc );  
+  BD_ASSERT( rc );
   BD_ASSERT( bdCtx.initialized );
   BD_ASSERT( bdCtx.entries == 1 );
   BD_ASSERT( bdCtx.checksum == 0x4 );
@@ -1295,7 +1303,7 @@ static void bd_testChecksum( void )
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, data2 );
   BD_ASSERT( !rc );
-  
+
   /* Case 2: no checksum */
   rc = BD_CheckHeader( &bdCtx, hdr3 );
   BD_ASSERT( rc );
@@ -1310,8 +1318,8 @@ static void bd_testChecksum( void )
 
 static void bd_testGetUInt( void )
 {
-  static const bd_uint8_t data1[]  = { 0x00, 0x01, 0x00, 0x04, 0x12, 0x34, 0x56, 0x78, 
-                                    0x00, 0x01, 0x00, 0x04, 0xca, 0xfe, 0xba, 0xbe, 
+  static const bd_uint8_t data1[]  = { 0x00, 0x01, 0x00, 0x04, 0x12, 0x34, 0x56, 0x78,
+                                    0x00, 0x01, 0x00, 0x04, 0xca, 0xfe, 0xba, 0xbe,
                                     0x00, 0x02, 0x00, 0x02, 0x47, 0x11,
                                     0x00, 0x00, 0x00, 0x00 };
   static const bd_uint8_t hdr1[]   = { 'B', 'D', 'V', '1', 0x00, sizeof(data1), 0x00, 0x00 };
@@ -1320,13 +1328,13 @@ static void bd_testGetUInt( void )
   bd_uint32_t   result32;
   bd_uint16_t   result16;
   bd_bool_t     rc;
-  
+
 
   /* Initialize */
   rc = BD_CheckHeader( &bdCtx, hdr1 );
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, data1 );
-  BD_ASSERT( rc );  
+  BD_ASSERT( rc );
   BD_ASSERT( bdCtx.entries == 3 );
 
 
@@ -1396,12 +1404,12 @@ static void bd_testGetString( void )
   char        buffer[16];
   bd_bool_t   rc;
 
-  
+
   /* Initialize */
   rc = BD_CheckHeader( &bdCtx, hdr1 );
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, data1 );
-  BD_ASSERT( rc );  
+  BD_ASSERT( rc );
   BD_ASSERT( bdCtx.initialized );
   BD_ASSERT( bdCtx.entries == 1 );
 
@@ -1441,13 +1449,13 @@ static void bd_testGetMAC( void )
   BD_Context  bdCtx;
   bd_uint8_t  buffer[6];
   bd_bool_t   rc;
-  
+
 
   /* Initialize */
   rc = BD_CheckHeader( &bdCtx, hdr1 );
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, data1 );
-  BD_ASSERT( rc );  
+  BD_ASSERT( rc );
   BD_ASSERT( bdCtx.initialized );
   BD_ASSERT( bdCtx.entries == 1 );
 
@@ -1485,13 +1493,13 @@ static void bd_testGetIPv4( void )
   BD_Context    bdCtx;
   bd_uint32_t   ipAddr;
   bd_bool_t     rc;
-  
+
 
   /* Initialize */
   rc = BD_CheckHeader( &bdCtx, hdr1 );
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, data1 );
-  BD_ASSERT( rc );  
+  BD_ASSERT( rc );
   BD_ASSERT( bdCtx.initialized );
   BD_ASSERT( bdCtx.entries == 1 );
 
@@ -1507,41 +1515,41 @@ static void bd_testGetIPv4( void )
 static void bd_testGetPartition( void )
 {
   /* Name with length zero */
-  static const bd_uint8_t data1[]  = { 0x00, 0x18, 0x00, 0x0A, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 
+  static const bd_uint8_t data1[]  = { 0x00, 0x18, 0x00, 0x0A, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
                                        0x09, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00 };
   static const bd_uint8_t hdr1[]   = { 'B', 'D', 'V', '1', 0x00, sizeof(data1), 0x00, 0x00 };
 
   /* Name with length 5 */
-  static const bd_uint8_t data2[]  = { 0x00, 0x18, 0x00, 0x0F, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 
+  static const bd_uint8_t data2[]  = { 0x00, 0x18, 0x00, 0x0F, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
                                        0x09, 0x0a, 'N',  'a',  'm',  'e',  '5',  0x00, 0x00, 0x00, 0x00};
   static const bd_uint8_t hdr2[]   = { 'B', 'D', 'V', '1', 0x00, sizeof(data2), 0x00, 0x00 };
 
   /* Name with length 16 */
-  static const bd_uint8_t data3[]  = { 0x00, 0x18, 0x00, 0x1A, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 
-                                       0x09, 0x0a, '0',  '1',  '2',  '3',  '4',  '5',  '6',  '7',  '8',  '9',  
+  static const bd_uint8_t data3[]  = { 0x00, 0x18, 0x00, 0x1A, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                                       0x09, 0x0a, '0',  '1',  '2',  '3',  '4',  '5',  '6',  '7',  '8',  '9',
                                        'a',  'b',  'c',  'd',  'e',  'f',  0x00,  0x00, 0x00, 0x00  };
   static const bd_uint8_t hdr3[]   = { 'B', 'D', 'V', '1', 0x00, sizeof(data3), 0x00, 0x00 };
 
   /* Name with length 17 */
-  static const bd_uint8_t data4[]  = { 0x00, 0x18, 0x00, 0x1B, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 
-                                       0x09, 0x0a, '0',  '1',  '2',  '3',  '4',  '5',  '6',  '7',  '8',  '9',  
+  static const bd_uint8_t data4[]  = { 0x00, 0x18, 0x00, 0x1B, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                                       0x09, 0x0a, '0',  '1',  '2',  '3',  '4',  '5',  '6',  '7',  '8',  '9',
                                        'A',  'B',  'C',  'D',  'E',  'F',  'x',  0x00,  0x00, 0x00, 0x00  };
   static const bd_uint8_t hdr4[]   = { 'B', 'D', 'V', '1', 0x00, sizeof(data4), 0x00, 0x00 };
 
   /* Too short BD */
-  static const bd_uint8_t data5[]  = { 0x00, 0x18, 0x00, 0x09, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 
+  static const bd_uint8_t data5[]  = { 0x00, 0x18, 0x00, 0x09, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
                                        0x09, 0x00, 0x00 };
   static const bd_uint8_t hdr5[]   = { 'B', 'D', 'V', '1', 0x00, sizeof(data5), 0x00, 0x00, 0x00, 0x00 };
 
   BD_Context  bdCtx;
   BD_PartitionEntry  bd_partitionEntry;
   bd_bool_t   rc;
-  
+
   /* Initialize */
   rc = BD_CheckHeader( &bdCtx, hdr1 );
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, data1 );
-  BD_ASSERT( rc );  
+  BD_ASSERT( rc );
   BD_ASSERT( bdCtx.initialized );
   BD_ASSERT( bdCtx.entries == 1 );
 
@@ -1564,7 +1572,7 @@ static void bd_testGetPartition( void )
   rc = BD_CheckHeader( &bdCtx, hdr2 );
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, data2 );
-  BD_ASSERT( rc );  
+  BD_ASSERT( rc );
   rc = BD_GetPartition( &bdCtx, BD_Partition, 0, &bd_partitionEntry );
   BD_ASSERT(rc);
   BD_ASSERT(bd_partitionEntry.name[0] == 'N');
@@ -1575,7 +1583,7 @@ static void bd_testGetPartition( void )
   rc = BD_CheckHeader( &bdCtx, hdr3 );
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, data3 );
-  BD_ASSERT( rc );  
+  BD_ASSERT( rc );
   rc = BD_GetPartition( &bdCtx, BD_Partition, 0, &bd_partitionEntry );
   BD_ASSERT(rc);
   BD_ASSERT(bd_partitionEntry.name[0] == '0');
@@ -1586,18 +1594,18 @@ static void bd_testGetPartition( void )
   rc = BD_CheckHeader( &bdCtx, hdr4 );
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, data4 );
-  BD_ASSERT( rc );  
+  BD_ASSERT( rc );
   rc = BD_GetPartition( &bdCtx, BD_Partition, 0, &bd_partitionEntry );
   BD_ASSERT(rc);
   BD_ASSERT(bd_partitionEntry.name[0] == '0');
   BD_ASSERT(bd_partitionEntry.name[15] == 'F');
   BD_ASSERT(bd_partitionEntry.name[16] == 0);
-  
+
   /* BD too short */
   rc = BD_CheckHeader( &bdCtx, hdr5 );
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, data5 );
-  BD_ASSERT( !rc );  
+  BD_ASSERT( !rc );
 }
 
 /*---------------------------------------------------------------------------*/
@@ -1610,169 +1618,169 @@ static void bd_testGetEntry( void )
   {
     bd_uint16_t tag;                 /**< Tag of entry */
     bd_uint_t   index;               /**< Index of entry */
-  } 
+  }
   BD_IndexTable;
 
   static const bd_uint_t num_entries = 51; // without end tag
-  static const bd_uint8_t data1[]  = 
+  static const bd_uint8_t data1[]  =
   {
     // serial[0]: 'Serial'
-    (bd_uint8_t)(BD_Serial>>8), (bd_uint8_t)(BD_Serial>>0), 0x00, 0x06, 
-    'S', 'e', 'r', 'i', 'a', 'l', 
+    (bd_uint8_t)(BD_Serial>>8), (bd_uint8_t)(BD_Serial>>0), 0x00, 0x06,
+    'S', 'e', 'r', 'i', 'a', 'l',
     // date[0]: '01.01.2000'
-    (bd_uint8_t)(BD_Production_Date>>8), (bd_uint8_t)(BD_Production_Date>>0), 0x00, 0x0A, 
-    '0', '1', '.', '0', '1', '.', '2', '0', '0', '0', 
+    (bd_uint8_t)(BD_Production_Date>>8), (bd_uint8_t)(BD_Production_Date>>0), 0x00, 0x0A,
+    '0', '1', '.', '0', '1', '.', '2', '0', '0', '0',
     // version[0]: 1
-    (bd_uint8_t)(BD_Hw_Ver>>8), (bd_uint8_t)(BD_Hw_Ver>>0), 0x00, sizeof(bd_uint8_t), 
-    0x01, 
+    (bd_uint8_t)(BD_Hw_Ver>>8), (bd_uint8_t)(BD_Hw_Ver>>0), 0x00, sizeof(bd_uint8_t),
+    0x01,
     // release[0]: 0
-    (bd_uint8_t)(BD_Hw_Rel>>8), (bd_uint8_t)(BD_Hw_Rel>>0), 0x00, sizeof(bd_uint8_t), 
-    0x00, 
+    (bd_uint8_t)(BD_Hw_Rel>>8), (bd_uint8_t)(BD_Hw_Rel>>0), 0x00, sizeof(bd_uint8_t),
+    0x00,
     // name[0]: 'Product'
-    (bd_uint8_t)(BD_Prod_Name>>8), (bd_uint8_t)(BD_Prod_Name>>0), 0x00, 0x07, 
-    'P', 'r', 'o', 'd', 'u', 'c', 't', 
+    (bd_uint8_t)(BD_Prod_Name>>8), (bd_uint8_t)(BD_Prod_Name>>0), 0x00, 0x07,
+    'P', 'r', 'o', 'd', 'u', 'c', 't',
     // variant[0]: 0xF0A5
-    (bd_uint8_t)(BD_Prod_Variant>>8), (bd_uint8_t)(BD_Prod_Variant>>0), 0x00, sizeof(bd_uint16_t), 
-    0xF0, 0xA5, 
+    (bd_uint8_t)(BD_Prod_Variant>>8), (bd_uint8_t)(BD_Prod_Variant>>0), 0x00, sizeof(bd_uint16_t),
+    0xF0, 0xA5,
     // compatibility[0]: 'Comp'
-    (bd_uint8_t)(BD_Prod_Compatibility>>8), (bd_uint8_t)(BD_Prod_Compatibility>>0), 0x00, 0x04, 
-    'C', 'o', 'm', 'p', 
+    (bd_uint8_t)(BD_Prod_Compatibility>>8), (bd_uint8_t)(BD_Prod_Compatibility>>0), 0x00, 0x04,
+    'C', 'o', 'm', 'p',
     // mac 05:14:23:32:41:50
-    (bd_uint8_t)(BD_Eth_Mac>>8), (bd_uint8_t)(BD_Eth_Mac>>0), 0x00, 0x06, 
-    0x05, 0x14, 0x23, 0x32, 0x41, 0x50, 
+    (bd_uint8_t)(BD_Eth_Mac>>8), (bd_uint8_t)(BD_Eth_Mac>>0), 0x00, 0x06,
+    0x05, 0x14, 0x23, 0x32, 0x41, 0x50,
     // ipv4-addr[0]: 192.168.0.2
-    (bd_uint8_t)(BD_Ip_Addr>>8), (bd_uint8_t)(BD_Ip_Addr>>0), 0x00, sizeof(bd_uint32_t), 
-    192, 168, 0, 2, 
+    (bd_uint8_t)(BD_Ip_Addr>>8), (bd_uint8_t)(BD_Ip_Addr>>0), 0x00, sizeof(bd_uint32_t),
+    192, 168, 0, 2,
     // ipv4-mask[0]: 255.255.255.0
-    (bd_uint8_t)(BD_Ip_Netmask>>8), (bd_uint8_t)(BD_Ip_Netmask>>0), 0x00, sizeof(bd_uint32_t), 
-    255, 255, 255, 0, 
+    (bd_uint8_t)(BD_Ip_Netmask>>8), (bd_uint8_t)(BD_Ip_Netmask>>0), 0x00, sizeof(bd_uint32_t),
+    255, 255, 255, 0,
 
     // ipv4-gateway[0]: 192.168.0.1
-    (bd_uint8_t)(BD_Ip_Gateway>>8), (bd_uint8_t)(BD_Ip_Gateway>>0), 0x00, sizeof(bd_uint32_t), 
-    192, 168, 0, 1, 
+    (bd_uint8_t)(BD_Ip_Gateway>>8), (bd_uint8_t)(BD_Ip_Gateway>>0), 0x00, sizeof(bd_uint32_t),
+    192, 168, 0, 1,
     // ipv4-addr[0]: 172.20.0.2
-    (bd_uint8_t)(BD_Ip_Addr>>8), (bd_uint8_t)(BD_Ip_Addr>>0), 0x00, sizeof(bd_uint32_t), 
-    172, 20, 0, 2, 
+    (bd_uint8_t)(BD_Ip_Addr>>8), (bd_uint8_t)(BD_Ip_Addr>>0), 0x00, sizeof(bd_uint32_t),
+    172, 20, 0, 2,
     // ipv4-mask[0]: 255.255.0.0
-    (bd_uint8_t)(BD_Ip_Netmask>>8), (bd_uint8_t)(BD_Ip_Netmask>>0), 0x00, sizeof(bd_uint32_t), 
-    255, 255, 0, 0, 
+    (bd_uint8_t)(BD_Ip_Netmask>>8), (bd_uint8_t)(BD_Ip_Netmask>>0), 0x00, sizeof(bd_uint32_t),
+    255, 255, 0, 0,
     // ipv4-gateway[0]: 172.20.0.1
-    (bd_uint8_t)(BD_Ip_Gateway>>8), (bd_uint8_t)(BD_Ip_Gateway>>0), 0x00, sizeof(bd_uint32_t), 
-    172, 20, 0, 1, 
+    (bd_uint8_t)(BD_Ip_Gateway>>8), (bd_uint8_t)(BD_Ip_Gateway>>0), 0x00, sizeof(bd_uint32_t),
+    172, 20, 0, 1,
     // usbd-pid[0]: 0xAABB
-    (bd_uint8_t)(BD_Usb_Device_Id>>8), (bd_uint8_t)(BD_Usb_Device_Id>>0), 0x00, sizeof(bd_uint16_t), 
-    0xAA, 0xBB, 
+    (bd_uint8_t)(BD_Usb_Device_Id>>8), (bd_uint8_t)(BD_Usb_Device_Id>>0), 0x00, sizeof(bd_uint16_t),
+    0xAA, 0xBB,
     // usbd-vid[0]: 0xCCDD
-    (bd_uint8_t)(BD_Usb_Vendor_Id>>8), (bd_uint8_t)(BD_Usb_Vendor_Id>>0), 0x00, sizeof(bd_uint16_t), 
-    0xCC, 0xDD, 
+    (bd_uint8_t)(BD_Usb_Vendor_Id>>8), (bd_uint8_t)(BD_Usb_Vendor_Id>>0), 0x00, sizeof(bd_uint16_t),
+    0xCC, 0xDD,
     // ram-size[0]: 0xA0A1A2A3
-    (bd_uint8_t)(BD_Ram_Size>>8), (bd_uint8_t)(BD_Ram_Size>>0), 0x00, sizeof(bd_uint32_t), 
-    0xA0, 0xA1, 0xA2, 0xA3, 
+    (bd_uint8_t)(BD_Ram_Size>>8), (bd_uint8_t)(BD_Ram_Size>>0), 0x00, sizeof(bd_uint32_t),
+    0xA0, 0xA1, 0xA2, 0xA3,
     // ram-size64[0]: 0xB0B1B2B3B4B5B6B7
-    (bd_uint8_t)(BD_Ram_Size64>>8), (bd_uint8_t)(BD_Ram_Size64>>0), 0x00, sizeof(bd_uint64_t), 
-    0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 
+    (bd_uint8_t)(BD_Ram_Size64>>8), (bd_uint8_t)(BD_Ram_Size64>>0), 0x00, sizeof(bd_uint64_t),
+    0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7,
     // flash-size[0]: 0x00000000
-    (bd_uint8_t)(BD_Flash_Size>>8), (bd_uint8_t)(BD_Flash_Size>>0), 0x00, sizeof(bd_uint32_t), 
-    0x00, 0x00, 0x00, 0x00, 
+    (bd_uint8_t)(BD_Flash_Size>>8), (bd_uint8_t)(BD_Flash_Size>>0), 0x00, sizeof(bd_uint32_t),
+    0x00, 0x00, 0x00, 0x00,
     // flash-size64[0]: 0x0000000000000000
-    (bd_uint8_t)(BD_Flash_Size64>>8), (bd_uint8_t)(BD_Flash_Size64>>0), 0x00, sizeof(bd_uint64_t), 
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+    (bd_uint8_t)(BD_Flash_Size64>>8), (bd_uint8_t)(BD_Flash_Size64>>0), 0x00, sizeof(bd_uint64_t),
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 
     // e2p-size[0]: 0x00000000
-    (bd_uint8_t)(BD_Eeeprom_Size>>8), (bd_uint8_t)(BD_Eeeprom_Size>>0), 0x00, sizeof(bd_uint32_t), 
-    0x00, 0x00, 0x00, 0x00, 
+    (bd_uint8_t)(BD_Eeeprom_Size>>8), (bd_uint8_t)(BD_Eeeprom_Size>>0), 0x00, sizeof(bd_uint32_t),
+    0x00, 0x00, 0x00, 0x00,
     // nvram-size64[0]: 0x00000000
-    (bd_uint8_t)(BD_Nv_Rram_Size>>8), (bd_uint8_t)(BD_Nv_Rram_Size>>0), 0x00, sizeof(bd_uint32_t), 
-    0x00, 0x00, 0x00, 0x00, 
+    (bd_uint8_t)(BD_Nv_Rram_Size>>8), (bd_uint8_t)(BD_Nv_Rram_Size>>0), 0x00, sizeof(bd_uint32_t),
+    0x00, 0x00, 0x00, 0x00,
     // cpu-core-clock[0]: 0x00000000
-    (bd_uint8_t)(BD_Cpu_Base_Clk>>8), (bd_uint8_t)(BD_Cpu_Base_Clk>>0), 0x00, sizeof(bd_uint32_t), 
-    0x00, 0x00, 0x00, 0x00, 
+    (bd_uint8_t)(BD_Cpu_Base_Clk>>8), (bd_uint8_t)(BD_Cpu_Base_Clk>>0), 0x00, sizeof(bd_uint32_t),
+    0x00, 0x00, 0x00, 0x00,
     // cpu-base-clock[0]: 0x00000000
-    (bd_uint8_t)(BD_Cpu_Core_Clk>>8), (bd_uint8_t)(BD_Cpu_Core_Clk>>0), 0x00, sizeof(bd_uint32_t), 
-    0x00, 0x00, 0x00, 0x00, 
+    (bd_uint8_t)(BD_Cpu_Core_Clk>>8), (bd_uint8_t)(BD_Cpu_Core_Clk>>0), 0x00, sizeof(bd_uint32_t),
+    0x00, 0x00, 0x00, 0x00,
     // cpubus-clock[0]: 0x00000000
-    (bd_uint8_t)(BD_Cpu_Bus_Clk>>8), (bd_uint8_t)(BD_Cpu_Bus_Clk>>0), 0x00, sizeof(bd_uint32_t), 
-    0x00, 0x00, 0x00, 0x00, 
+    (bd_uint8_t)(BD_Cpu_Bus_Clk>>8), (bd_uint8_t)(BD_Cpu_Bus_Clk>>0), 0x00, sizeof(bd_uint32_t),
+    0x00, 0x00, 0x00, 0x00,
     // cpuram-clock[0]: 0x00000000
-    (bd_uint8_t)(BD_Ram_Clk>>8), (bd_uint8_t)(BD_Ram_Clk>>0), 0x00, sizeof(bd_uint32_t), 
-    0x00, 0x00, 0x00, 0x00, 
+    (bd_uint8_t)(BD_Ram_Clk>>8), (bd_uint8_t)(BD_Ram_Clk>>0), 0x00, sizeof(bd_uint32_t),
+    0x00, 0x00, 0x00, 0x00,
 
     // partition[0]: (len=0x0F) [ACTIVE, BOOTLOADER, offset=0x00010203, size=0x04050607, 'Part0']
     (bd_uint8_t)(BD_Partition>>8), (bd_uint8_t)(BD_Partition>>0), 0x00, 0x0F,
-    BD_Partition_Flags_Active, 
-    BD_Partition_Type_Raw_BootLoader, 
-    0x00, 0x01, 0x02, 0x03, 
-    0x04, 0x05, 0x06, 0x07, 
-    'P',  'a',  'r',  't',  '0',   
+    BD_Partition_Flags_Active,
+    BD_Partition_Type_Raw_BootLoader,
+    0x00, 0x01, 0x02, 0x03,
+    0x04, 0x05, 0x06, 0x07,
+    'P',  'a',  'r',  't',  '0',
     // partition[0]: (len=0x0F) [INACTIVE, YAFFS2, offset=0x00112233, size=0x44556677, 'Part1']
-    (bd_uint8_t)(BD_Partition>>8), (bd_uint8_t)(BD_Partition>>0), 0x00, 2*sizeof(bd_uint8_t)+2*sizeof(bd_uint32_t)+5, 
-    BD_Partition_Flags_None, 
-    BD_Partition_Type_FS_YAFFS2, 
-    0x00, 0x11, 0x22, 0x33, 
-    0x44, 0x55, 0x66, 0x77, 
-    'P',  'a',  'r',  't',  '1',   
+    (bd_uint8_t)(BD_Partition>>8), (bd_uint8_t)(BD_Partition>>0), 0x00, 2*sizeof(bd_uint8_t)+2*sizeof(bd_uint32_t)+5,
+    BD_Partition_Flags_None,
+    BD_Partition_Type_FS_YAFFS2,
+    0x00, 0x11, 0x22, 0x33,
+    0x44, 0x55, 0x66, 0x77,
+    'P',  'a',  'r',  't',  '1',
     // partition[0]: (len=0x0F) [ACTIVE, BBT, offset=0xFF00AA55, size=0x00FF55AA, 'Part2']
-    (bd_uint8_t)(BD_Partition>>8), (bd_uint8_t)(BD_Partition>>0), 0x00, 2*sizeof(bd_uint8_t)+2*sizeof(bd_uint32_t)+5, 
-    BD_Partition_Flags_Active, 
-    BD_Partition_Type_Raw_BBT, 
-    0xFF, 0x00, 0xAA, 0x55, 
-    0x00, 0xFF, 0x55, 0xAA, 
-    'P',  'a',  'r',  't',  '2',   
+    (bd_uint8_t)(BD_Partition>>8), (bd_uint8_t)(BD_Partition>>0), 0x00, 2*sizeof(bd_uint8_t)+2*sizeof(bd_uint32_t)+5,
+    BD_Partition_Flags_Active,
+    BD_Partition_Type_Raw_BBT,
+    0xFF, 0x00, 0xAA, 0x55,
+    0x00, 0xFF, 0x55, 0xAA,
+    'P',  'a',  'r',  't',  '2',
     // partition64[0]: (len=0x0F) [ACTIVE, BBT, ReadOnly, offset=0x0000FFFF'FF00AA55, size=0000FFFF'0x00FF55AA, 'Part3']
     (bd_uint8_t)(BD_Partition64>>8), (bd_uint8_t)(BD_Partition64>>0), 0x00, 8*sizeof(bd_uint8_t)+2*sizeof(bd_uint64_t)+5,
-    BD_Partition_Flags_Active, 
-    BD_Partition_Type_FS_YAFFS2, 
+    BD_Partition_Flags_Active,
+    BD_Partition_Type_FS_YAFFS2,
     BD_Partition_Opts_ReadOnly,
     0,0,0,0,0,
-    0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0xAA, 0x55, 
-    0x00, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0x55, 0xAA, 
+    0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0xAA, 0x55,
+    0x00, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0x55, 0xAA,
     'P',  'a',  'r',  't',  '3',
 
     // lcd-type[0]: 0x0000
-    (bd_uint8_t)(BD_Lcd_Type>>8), (bd_uint8_t)(BD_Lcd_Type>>0), 0x00, sizeof(bd_uint16_t), 
-    0x00, 0x00, 
+    (bd_uint8_t)(BD_Lcd_Type>>8), (bd_uint8_t)(BD_Lcd_Type>>0), 0x00, sizeof(bd_uint16_t),
+    0x00, 0x00,
     // lcd-backlight[0]: 0x0000
-    (bd_uint8_t)(BD_Lcd_Backlight>>8), (bd_uint8_t)(BD_Lcd_Backlight>>0), 0x00, sizeof(bd_uint8_t), 
-    0x01, 
+    (bd_uint8_t)(BD_Lcd_Backlight>>8), (bd_uint8_t)(BD_Lcd_Backlight>>0), 0x00, sizeof(bd_uint8_t),
+    0x01,
     // lcd-contrast[0]: 0x0000
-    (bd_uint8_t)(BD_Lcd_Contrast>>8), (bd_uint8_t)(BD_Lcd_Contrast>>0), 0x00, sizeof(bd_uint8_t), 
-    0x7F, 
+    (bd_uint8_t)(BD_Lcd_Contrast>>8), (bd_uint8_t)(BD_Lcd_Contrast>>0), 0x00, sizeof(bd_uint8_t),
+    0x7F,
     // adapter-type[0]: 0x0000
-    BD16(BD_Ui_Adapter_Type), 0x00, sizeof(bd_uint16_t), 
-    0x00, 0x00, 
+    BD16(BD_Ui_Adapter_Type), 0x00, sizeof(bd_uint16_t),
+    0x00, 0x00,
 
     // user void[0-15]: -
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
 
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
-    0x80, 0x00, 0x00, 0x00, 
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
+    0x80, 0x00, 0x00, 0x00,
 
     // user row data[0]: 00 01 02 03 04 05 06 07 08 ... 3F
-    0x80,  0x01,  0x00, 0x40, 
-    0x00,  0x01,  0x02,  0x03,  0x04,  0x05,  0x06,  0x07, 
-    0x08,  0x09,  0x0A,  0x0B,  0x0C,  0x0D,  0x0E,  0x0F, 
-    0x10,  0x11,  0x12,  0x13,  0x14,  0x15,  0x16,  0x17, 
-    0x18,  0x19,  0x1A,  0x1B,  0x1C,  0x1D,  0x1E,  0x1F, 
-    0x20,  0x21,  0x22,  0x23,  0x24,  0x25,  0x26,  0x27, 
-    0x28,  0x29,  0x2A,  0x2B,  0x2C,  0x2D,  0x2E,  0x2F, 
-    0x30,  0x31,  0x32,  0x33,  0x34,  0x35,  0x36,  0x37, 
-    0x38,  0x39,  0x3A,  0x3B,  0x3C,  0x3D,  0x3E,  0x3F, 
+    0x80,  0x01,  0x00, 0x40,
+    0x00,  0x01,  0x02,  0x03,  0x04,  0x05,  0x06,  0x07,
+    0x08,  0x09,  0x0A,  0x0B,  0x0C,  0x0D,  0x0E,  0x0F,
+    0x10,  0x11,  0x12,  0x13,  0x14,  0x15,  0x16,  0x17,
+    0x18,  0x19,  0x1A,  0x1B,  0x1C,  0x1D,  0x1E,  0x1F,
+    0x20,  0x21,  0x22,  0x23,  0x24,  0x25,  0x26,  0x27,
+    0x28,  0x29,  0x2A,  0x2B,  0x2C,  0x2D,  0x2E,  0x2F,
+    0x30,  0x31,  0x32,  0x33,  0x34,  0x35,  0x36,  0x37,
+    0x38,  0x39,  0x3A,  0x3B,  0x3C,  0x3D,  0x3E,  0x3F,
 
     // end
-    (bd_uint8_t)(BD_End>>8), (bd_uint8_t)(BD_End>>0), 0x00, 0x00, 
+    (bd_uint8_t)(BD_End>>8), (bd_uint8_t)(BD_End>>0), 0x00, 0x00,
   };
   static const bd_uint8_t hdr1[]   = { 'B', 'D', 'V', '1', BD16(sizeof(data1)), BD16(0x0000) };
   static BD_IndexTable  indexTable[BD_MAX_LENGTH/4];
@@ -1798,11 +1806,11 @@ static void bd_testGetEntry( void )
   rc = BD_CheckHeader( &bdCtx, hdr1 );
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, data1 );
-  BD_ASSERT( rc );  
+  BD_ASSERT( rc );
   BD_ASSERT( bdCtx.initialized );
   BD_ASSERT( bdCtx.entries == num_entries );
   rc = BD_InitEntry(&bd_entry);
-  BD_ASSERT( rc );  
+  BD_ASSERT( rc );
 
   /* get all bd entries */
   while(BD_GetNextEntry(&bdCtx, &bd_entry)==BD_TRUE) {
@@ -2042,7 +2050,7 @@ static void bd_testHash( void )
   {
     0x42, 0x44, 0x56, 0x31, 0x00, 0x20, 0x04, 0xBE, 0x00, 0x1F, 0x00, 0x06, 0x00, 0x12, 0x63, 0x1E,
     0x22, 0x3D, 0x00, 0x08, 0x00, 0x06, 0x00, 0x11, 0x2B, 0x00, 0xAB, 0xCD, 0x00, 0x09, 0x00, 0x04,
-    0xAC, 0x1F, 0x0E, 0xFF, 0x00, 0x00, 0x00, 0x00                        
+    0xAC, 0x1F, 0x0E, 0xFF, 0x00, 0x00, 0x00, 0x00
   };
   const char  key[]     = "12345";
   const char  keyFail[] = "joshua";
@@ -2054,11 +2062,11 @@ static void bd_testHash( void )
   rc = BD_CheckHeader( &bdCtx, bdData );
   BD_ASSERT( rc );
   rc = BD_ImportData( &bdCtx, bdData+8 );
-  BD_ASSERT( rc );  
+  BD_ASSERT( rc );
 
   /* Verify hashed area of board descriptor */
   rc = BD_VerifySha1Hmac( &bdCtx, BD_Hmac_Sha1_4, 0, key, 5);
-  BD_ASSERT( rc ); 
+  BD_ASSERT( rc );
 
   /* Try with wrong key -> shall fail */
   rc = BD_VerifySha1Hmac( &bdCtx, BD_Hmac_Sha1_4, 0, keyFail, 6);
@@ -2066,9 +2074,9 @@ static void bd_testHash( void )
 
   /* Now manipulate a byte in the MAC address .. */
   bdData[23]++;
-  /* .. and test again. This must fail */  
+  /* .. and test again. This must fail */
   rc = BD_VerifySha1Hmac( &bdCtx, BD_Hmac_Sha1_4, 0, key, 5);
-  BD_ASSERT( !rc ); 
+  BD_ASSERT( !rc );
 }
 
 #endif

@@ -4,4 +4,3 @@
 #
 
 obj-${CONFIG_TI_I2C_BOARD_DETECT} += board_detect.o
-obj-${CONFIG_TARGET_AM335X_NETBIRD} += bdparser.o board_detect_netbird.o

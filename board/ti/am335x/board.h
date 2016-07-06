@@ -21,13 +21,6 @@ static inline int board_is_bone_lt(void)
 	return board_ti_is("A335BNLT");
 }
 
-static inline int board_is_nbhw16(void)
-{
-	/* TODO: make this dynamic */
-	return 1;
-	/*return board_ti_is("NBHW16");*/
-}
-
 static inline int board_is_bbg1(void)
 {
 	return board_is_bone_lt() && !strncmp(board_ti_get_rev(), "BBG1", 4);
