@@ -160,7 +160,7 @@ static u8 try_partition_read(void)
 			partition_count++;
 			if (((partition.flags & BD_Partition_Flags_Active) != 0) &&
 					(i > 0)) {
-				boot_partition = i - 1; /* The first one is a dummy partition for u-boot */
+				boot_partition = i;
 			}
 		}
 	}
@@ -211,3 +211,30 @@ int bd_get_mac_address(uint index, u8 *mac, u32 len)
 	else
 		return -1;
 }
+
+int bd_get_hw_version(int* pVer, int* pRev)
+{
+	u8 bdCpHwVer = 0;
+	u8 bdCpHwRev = 0;
+
+	if (bd_board_info == 0) {
+		puts("Board info not valid, can not get hw version\n");
+		return -1;
+	}
+	/* Hardware version/revision */
+	if ( !BD_GetUInt8( bd_board_info, BD_Hw_Ver, 0, &bdCpHwVer) ) {
+		printf("no Hw version found\n");
+		return -1;
+	}
+	/* Hardware version/revision */
+	if ( !BD_GetUInt8( bd_board_info, BD_Hw_Rel, 0, &bdCpHwRev) ) {
+		printf("no Hw release found\n");
+		return -1;
+	}
+
+	*pVer = bdCpHwVer;
+	*pRev = bdCpHwRev;
+
+	return 0;
+}
+

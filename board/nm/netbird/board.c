@@ -56,6 +56,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define NETBIRD_GPIO_EN_GPS_ANT	GPIO_TO_PIN(2, 24)
 #define NETBIRD_GPIO_LED_A		GPIO_TO_PIN(1, 14)
 #define NETBIRD_GPIO_LED_B		GPIO_TO_PIN(1, 15)
+#define NETBIRD_GPIO_RESET_BUTTON	GPIO_TO_PIN(1, 13)
 
 #if defined(CONFIG_SPL_BUILD) || \
 	(defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_DM_ETH))
@@ -214,6 +215,81 @@ err_free_gpio:
 #define REQUEST_AND_SET_GPIO(N)	request_and_set_gpio(N, #N, 1);
 #define REQUEST_AND_CLEAR_GPIO(N)	request_and_set_gpio(N, #N, 0);
 
+
+int check_reset_button(void)
+{
+	int counter = 0;
+	int ret;
+
+	ret = gpio_request(NETBIRD_GPIO_RESET_BUTTON, "reset button");
+	if (ret < 0) {
+		printf("Unable to request reset button gpio\n");
+		return -1;
+	}
+
+	ret = gpio_direction_input(NETBIRD_GPIO_RESET_BUTTON);
+	if (ret < 0) {
+		printf("Unable to set reset button as input\n");
+		return -1;
+	}
+
+	/* Check if reset button is pressed for at least 3 seconds */
+	do {
+		if (gpio_get_value(NETBIRD_GPIO_RESET_BUTTON) != 0)  break;
+		udelay(100000);  /* 100ms */
+		counter++;
+
+		if (counter==30) {/* Indicate factory reset threshold */
+			/* let LED blink up once */
+			gpio_set_value(NETBIRD_GPIO_LED_B, 1);
+			udelay(400000);  /* 400ms */
+			gpio_set_value(NETBIRD_GPIO_LED_B, 0);
+		} else if (counter==150) { /* Indicate recovery boot threshold */
+			/* let LED blink up twice */
+			gpio_set_value(NETBIRD_GPIO_LED_B, 1);
+			udelay(400000);  /* 400ms */
+			gpio_set_value(NETBIRD_GPIO_LED_B, 0);
+			udelay(400000);  /* 400ms */
+			gpio_set_value(NETBIRD_GPIO_LED_B, 1);
+			udelay(400000);  /* 400ms */
+			gpio_set_value(NETBIRD_GPIO_LED_B, 0);
+		}
+	} while (counter<150);
+
+	if (counter < 30) return 0; /* Don't do anything for duration < 3s */
+
+	if (counter < 150) /* Do factory reset for duration between 3s and 15s */
+	{
+		char new_bootargs[512];
+		char *bootargs = getenv("bootargs");
+
+		if (bootargs==0) bootargs="";
+
+		printf("Do factory reset during boot...\n");
+
+		strncpy(new_bootargs, bootargs, sizeof(new_bootargs));
+		strncat(new_bootargs, " factory-reset", sizeof(new_bootargs));
+
+		setenv("bootargs", new_bootargs);
+
+		printf("bootargs = %s\n", new_bootargs);
+
+		return 1;
+	} else {	/* Boot into recovery for duration > 15s */
+
+		/* set consoledev to external port */
+		setenv("consoledev", "ttyO0");
+
+		printf("Booting recovery image...\n");
+
+		/* Set bootcmd to run recovery */
+		setenv("bootcmd", "run recovery");
+
+		return 0;
+	}
+	return 0;
+}
+
 /*
  * Basic board specific setup.  Pinmux has been handled already.
  */
@@ -233,7 +309,8 @@ int board_init(void)
 	REQUEST_AND_SET_GPIO(NETBIRD_GPIO_PWR_GSM);
 	mdelay(1200);
 	gpio_set_value(NETBIRD_GPIO_PWR_GSM, 0);
-	REQUEST_AND_SET_GPIO(NETBIRD_GPIO_LED_A);
+	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_LED_A);
+	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_LED_B);
 	REQUEST_AND_SET_GPIO(NETBIRD_GPIO_RST_PHY_N);
 	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_WLAN_EN);
 	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_BT_EN);
@@ -334,6 +411,7 @@ static void set_mac_address(int index, uchar mac[6])
  */
 int board_eth_init(bd_t *bis)
 {
+	int hw_ver, hw_rev;
 	int rv, n = 0;
 	uint8_t mac_addr0[6] = {02,00,00,00,00,01};
 	uint8_t mac_addr1[6] = {02,00,00,00,00,02};
@@ -355,13 +433,25 @@ int board_eth_init(bd_t *bis)
 	bd_get_mac_address(1, mac_addr1, sizeof(mac_addr1));
 	set_mac_address(1, mac_addr1);
 
+	/* add active root partition to environment */
 	boot_partition = bd_get_boot_partition();
 	if (boot_partition > 1) {
 		boot_partition = 0;
 	}
 
-	/* mmcblk0p1 => u-boot, mmcblk0p2 => root0 so +2 */
-	setenv_ulong("root_part", boot_partition + 2);
+	/* mmcblk0p1 => root0, mmcblk0p2 => root1 so +1 */
+	setenv_ulong("root_part", boot_partition + 1);
+
+	/* add hardware versions to environment */
+	if (bd_get_hw_version(&hw_ver, &hw_rev)==0) {
+		char hw_versions[128];
+		char new_env[256];
+		snprintf(hw_versions, sizeof(hw_versions), "CP=%d.%d", hw_ver, hw_rev);
+		snprintf(new_env, sizeof(new_env), "setenv bootargs $bootargs %s", hw_versions);
+		setenv("add_version_bootargs", new_env);
+	}
+
+	check_reset_button();
 
 	writel(RMII_MODE_ENABLE | RMII_CHIPCKL_ENABLE, &cdev->miisel);
 	cpsw_slaves[0].phy_if = PHY_INTERFACE_MODE_RMII;

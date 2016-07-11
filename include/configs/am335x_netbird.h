@@ -57,12 +57,14 @@
 			"ext4load mmc 1:$root_part $fdt_addr /boot/am335x-nbhw16.dtb && setenv bootargs $bootargs rw;\0" \
 	"sdprod=ext4load mmc 1:$root_part $kernel_addr /boot/$kernel_image && " \
 			"ext4load mmc 1:$root_part $fdt_addr /boot/$fdt_image && setenv bootargs $bootargs ro;\0" \
-	"sdboot=if mmc dev 1; then " \
-			"echo Copying Linux from SD to RAM... && " \
-			"run sdprod || run sdbringup && " \
-			"run add_sd_bootargs && run add_version_bootargs && bootz $kernel_addr - $fdt_addr; " \
-		"fi\0" \
+	"sdboot=if mmc dev 1; then echo Copying Linux from SD to RAM...; "\
+			"if test -e mmc 1:$root_part /boot/$kernel_image; then run sdprod; " \
+			"else run sdbringup; fi; " \
+			"run add_sd_bootargs; run add_version_bootargs; " \
+			"bootz $kernel_addr - $fdt_addr; fi\0" \
 	"bootcmd=run sdboot\0" \
+	"ipaddr=192.168.1.1\0" \
+	"serverip=192.168.1.254\0" \
 	"recovery=tftpboot $kernel_addr recovery-image; tftpboot $fdt_addr recovery-dtb; setenv bootargs rdinit=/etc/preinit console=ttyO0,115200 debug; bootz $kernel_addr - $fdt_addr\0"
 #endif
 

@@ -12,5 +12,6 @@
 int bd_read(int bus_addr, int dev_addr);
 u8 bd_get_boot_partition(void);
 int bd_get_mac_address(uint index, u8 *mac_address, u32 len);
+int bd_get_hw_version(int* pVer, int* pRev);
 
 #endif	/* __BOARD_DESCRIPTOR_H */
