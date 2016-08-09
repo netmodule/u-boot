@@ -326,6 +326,35 @@ int board_init(void)
 #ifdef CONFIG_BOARD_LATE_INIT
 int board_late_init(void)
 {
+#if !defined(CONFIG_SPL_BUILD)
+	int hw_ver, hw_rev;
+	int boot_partition;
+
+	if (read_eeprom() < 0)
+		puts("Could not get board ID.\n");
+
+	/* add active root partition to environment */
+	boot_partition = bd_get_boot_partition();
+	if (boot_partition > 1) {
+		boot_partition = 0;
+	}
+
+	/* mmcblk0p1 => root0, mmcblk0p2 => root1 so +1 */
+	setenv_ulong("root_part", boot_partition + 1);
+
+	/* add hardware versions to environment */
+	if (bd_get_hw_version(&hw_ver, &hw_rev)==0) {
+		char hw_versions[128];
+		char new_env[256];
+		snprintf(hw_versions, sizeof(hw_versions), "CP=%d.%d", hw_ver, hw_rev);
+		snprintf(new_env, sizeof(new_env), "setenv bootargs $bootargs %s", hw_versions);
+		setenv("add_version_bootargs", new_env);
+	}
+
+	check_reset_button();
+
+#endif
+
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 	int rc;
 	char *name = NULL;
@@ -411,47 +440,21 @@ static void set_mac_address(int index, uchar mac[6])
  */
 int board_eth_init(bd_t *bis)
 {
-	int hw_ver, hw_rev;
 	int rv, n = 0;
 	uint8_t mac_addr0[6] = {02,00,00,00,00,01};
 	uint8_t mac_addr1[6] = {02,00,00,00,00,02};
 	__maybe_unused struct ti_am_eeprom *header;
-	int boot_partition;
-
 
 #if !defined(CONFIG_SPL_BUILD)
 #ifdef CONFIG_DRIVER_TI_CPSW
 
 	cpsw_data.mdio_div = 0x3E;
 
-	if (read_eeprom() < 0)
-		puts("Could not get board ID.\n");
-
 	bd_get_mac_address(0, mac_addr0, sizeof(mac_addr0));
 	set_mac_address(0, mac_addr0);
 
 	bd_get_mac_address(1, mac_addr1, sizeof(mac_addr1));
 	set_mac_address(1, mac_addr1);
-
-	/* add active root partition to environment */
-	boot_partition = bd_get_boot_partition();
-	if (boot_partition > 1) {
-		boot_partition = 0;
-	}
-
-	/* mmcblk0p1 => root0, mmcblk0p2 => root1 so +1 */
-	setenv_ulong("root_part", boot_partition + 1);
-
-	/* add hardware versions to environment */
-	if (bd_get_hw_version(&hw_ver, &hw_rev)==0) {
-		char hw_versions[128];
-		char new_env[256];
-		snprintf(hw_versions, sizeof(hw_versions), "CP=%d.%d", hw_ver, hw_rev);
-		snprintf(new_env, sizeof(new_env), "setenv bootargs $bootargs %s", hw_versions);
-		setenv("add_version_bootargs", new_env);
-	}
-
-	check_reset_button();
 
 	writel(RMII_MODE_ENABLE | RMII_CHIPCKL_ENABLE, &cdev->miisel);
 	cpsw_slaves[0].phy_if = PHY_INTERFACE_MODE_RMII;
