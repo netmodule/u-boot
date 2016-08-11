@@ -21,6 +21,8 @@ struct cm_wkuppll *const cmwkup = (struct cm_wkuppll *)CM_WKUP;
 struct cm_dpll *const cmdpll = (struct cm_dpll *)CM_DPLL;
 struct cm_rtc *const cmrtc = (struct cm_rtc *)CM_RTC;
 
+struct ctrl_stat *const ctrlstat = (struct ctrl_stat*)CTRL_BASE;
+
 const struct dpll_regs dpll_mpu_regs = {
 	.cm_clkmode_dpll	= CM_WKUP + 0x88,
 	.cm_idlest_dpll		= CM_WKUP + 0x20,
@@ -53,13 +55,13 @@ const struct dpll_regs dpll_ddr_regs = {
 
 struct dpll_params dpll_mpu_opp100 = {
 		CONFIG_SYS_MPUCLK, OSC-1, 1, -1, -1, -1, -1};
-const struct dpll_params dpll_core_opp100 = {
-		1000, OSC-1, -1, -1, 10, 8, 4};
-const struct dpll_params dpll_mpu = {
-		MPUPLL_M_300, OSC-1, 1, -1, -1, -1, -1};
-const struct dpll_params dpll_core = {
-		50, OSC-1, -1, -1, 1, 1, 1};
-const struct dpll_params dpll_per = {
+struct dpll_params dpll_core_opp100 = {
+  1000, OSC-1, -1, -1, 10, 8, 4};
+struct dpll_params dpll_mpu = {
+  MPUPLL_M_300, OSC-1, 1, -1, -1, -1, -1};
+struct dpll_params dpll_core = {
+  50, OSC-1, -1, -1, 1, 1, 1};
+struct dpll_params dpll_per = {
 		960, OSC-1, 5, -1, -1, -1, -1};
 
 const struct dpll_params *get_dpll_mpu_params(void)
@@ -113,8 +115,25 @@ void setup_clocks_for_console(void)
 			MODULE_CLKCTRL_MODULEMODE_SHIFT);
 }
 
+static inline unsigned long get_osclk_dpll(void)
+{
+	return (get_osclk() / 1000000) - 1;
+}
+
+static inline void am33xx_init_osc_clock(void)
+{
+	unsigned long n = get_osclk_dpll();
+	dpll_mpu_opp100.n = n;
+	dpll_core_opp100.n = n;
+	dpll_mpu.n = n;
+	dpll_core.n = n;
+	dpll_per.n = n;
+}
+
 void enable_basic_clocks(void)
 {
+	am33xx_init_osc_clock();
+
 	u32 *const clk_domains[] = {
 		&cmper->l3clkstctrl,
 		&cmper->l4fwclkstctrl,
@@ -158,4 +177,19 @@ void enable_basic_clocks(void)
 
 	/* Select the Master osc 24 MHZ as Timer2 clock source */
 	writel(0x1, &cmdpll->clktimer2clk);
+}
+
+static unsigned long ram_timings[] = {
+	19200000, 24000000, 25000000, 26000000
+};
+
+unsigned long get_osclk(void)
+{
+	if (V_OSCK != 0) {
+		return V_OSCK;
+	}
+	else {
+		unsigned int sysboot1 = (readl(&ctrlstat->statusreg) >> 22) & 3;
+		return ram_timings[sysboot1];
+	}
 }

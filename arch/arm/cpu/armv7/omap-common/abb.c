@@ -48,7 +48,7 @@ static void abb_setup_timings(u32 setup)
 	 */
 
 	/* calculate SR2_WTCNT_VALUE */
-	sys_rate = DIV_ROUND_CLOSEST(V_OSCK, 1000000);
+	sys_rate = DIV_ROUND_CLOSEST(get_osclk(), 1000000);
 	clk_cycles = DIV_ROUND_CLOSEST(OMAP_ABB_CLOCK_CYCLES * 10, sys_rate);
 	sr2_cnt = DIV_ROUND_CLOSEST(OMAP_ABB_SETTLING_TIME * 10, clk_cycles);
 

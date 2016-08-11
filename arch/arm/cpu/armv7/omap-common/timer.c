@@ -33,6 +33,16 @@ static struct gptimer *timer_base = (struct gptimer *)CONFIG_SYS_TIMERBASE;
 #define TIMER_OVERFLOW_VAL	0xffffffff
 #define TIMER_LOAD_VAL		0
 
+static inline unsigned long get_timer_clock(void)
+{
+	if (V_SCLK != 0) {
+		return TIMER_CLOCK;
+	}
+	else {
+		return get_osclk() / (2 << CONFIG_SYS_PTV);
+	}
+}
+
 int timer_init(void)
 {
 	/* start the counter ticking up, reload value on overflow */
@@ -55,7 +65,7 @@ ulong get_timer(ulong base)
 /* delay x useconds */
 void __udelay(unsigned long usec)
 {
-	long tmo = usec * (TIMER_CLOCK / 1000) / 1000;
+	long tmo = usec * (get_timer_clock() / 1000) / 1000;
 	unsigned long now, last = readl(&timer_base->tcrr);
 
 	while (tmo > 0) {
@@ -71,13 +81,13 @@ void __udelay(unsigned long usec)
 ulong get_timer_masked(void)
 {
 	/* current tick value */
-	ulong now = readl(&timer_base->tcrr) / (TIMER_CLOCK / CONFIG_SYS_HZ);
+	ulong now = readl(&timer_base->tcrr) / (get_timer_clock() / CONFIG_SYS_HZ);
 
 	if (now >= gd->arch.lastinc) {	/* normal mode (non roll) */
 		/* move stamp fordward with absoulte diff ticks */
 		gd->arch.tbl += (now - gd->arch.lastinc);
 	} else {	/* we have rollover of incrementer */
-		gd->arch.tbl += ((TIMER_LOAD_VAL / (TIMER_CLOCK /
+		gd->arch.tbl += ((TIMER_LOAD_VAL / (get_timer_clock() /
 				CONFIG_SYS_HZ)) - gd->arch.lastinc) + now;
 	}
 	gd->arch.lastinc = now;
