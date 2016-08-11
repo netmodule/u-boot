@@ -35,7 +35,7 @@
 #define CONFIG_BOARD_LATE_INIT
 
 /* Clock Defines */
-#define V_OSCK				24000000  /* Clock output from T2 */
+#define V_OSCK				0 /* 0 means detect from sysboot1 config */
 #define V_SCLK				(V_OSCK)
 
 #include <config_distro_bootcmd.h>

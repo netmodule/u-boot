@@ -127,7 +127,7 @@ int spl_start_uboot(void)
 #endif
 
 #define OSC	(V_OSCK/1000000)
-const struct dpll_params dpll_ddr_nbhw16= {
+struct dpll_params dpll_ddr_nbhw16= {
 		400, OSC-1, 1, -1, -1, -1, -1};
 
 void am33xx_spl_board_init(void)
@@ -155,6 +155,7 @@ void am33xx_spl_board_init(void)
 
 const struct dpll_params *get_dpll_ddr_params(void)
 {
+	dpll_ddr_nbhw16.n = (get_osclk() / 1000000) - 1;
 	return &dpll_ddr_nbhw16;
 }
 
@@ -319,6 +320,8 @@ int board_init(void)
 	 * See SPRS717J site 49 (10)*/
 	#define SMA2_REGISTER (CTRL_BASE + 0x1320)
 	writel(0x01, SMA2_REGISTER); /* Select RMII2_CRS_DV instead of MMC2_DAT7 */
+
+	printf("OSC: %lu Hz\n", get_osclk());
 
 	return 0;
 }
