@@ -58,6 +58,8 @@ DECLARE_GLOBAL_DATA_PTR;
 #define NETBIRD_GPIO_LED_B		GPIO_TO_PIN(1, 15)
 #define NETBIRD_GPIO_RESET_BUTTON	GPIO_TO_PIN(1, 13)
 
+#define DDR3_CLOCK_FREQUENCY (400)
+
 #if defined(CONFIG_SPL_BUILD) || \
 	(defined(CONFIG_DRIVER_TI_CPSW) && !defined(CONFIG_DM_ETH))
 static struct ctrl_dev *cdev = (struct ctrl_dev *)CTRL_DEVICE_BASE;
@@ -99,10 +101,10 @@ static const struct cmd_control ddr3_netbird_cmd_ctrl_data = {
 
 static struct emif_regs ddr3_netbird_emif_reg_data = {
 	.sdram_config = MT41K256M16HA125E_EMIF_SDCFG,
-	.ref_ctrl = MT41K256M16HA125E_EMIF_SDREF,
-	.sdram_tim1 = 0x0aaae51b, /* From AM335x_DDR_register_calc_tool.xls */
-	.sdram_tim2 = 0x24437fda, /* From AM335x_DDR_register_calc_tool.xls */
-	.sdram_tim3 = 0x50ffe3ff, /* From AM335x_DDR_register_calc_tool.xls */
+	.ref_ctrl = 0x61A,	/* 32ms > 85°C */
+	.sdram_tim1 = 0x0AAAE51B,
+	.sdram_tim2 = 0x246B7FDA,
+	.sdram_tim3 = 0x50FFE67F,
 	.zq_config = MT41K256M16HA125E_ZQ_CFG,
 	.emif_ddr_phy_ctlr_1 = MT41K256M16HA125E_EMIF_READ_LATENCY,
 };
@@ -128,7 +130,7 @@ int spl_start_uboot(void)
 
 #define OSC	(V_OSCK/1000000)
 struct dpll_params dpll_ddr_nbhw16= {
-		400, OSC-1, 1, -1, -1, -1, -1};
+		DDR3_CLOCK_FREQUENCY, OSC-1, 1, -1, -1, -1, -1};
 
 void am33xx_spl_board_init(void)
 {
@@ -181,13 +183,13 @@ const struct ctrl_ioregs ioregs_netbird = {
 
 void sdram_init(void)
 {
-	config_ddr(400, &ioregs_netbird,
+	config_ddr(DDR3_CLOCK_FREQUENCY, &ioregs_netbird,
 		   &ddr3_netbird_data,
 		   &ddr3_netbird_cmd_ctrl_data,
 		   &ddr3_netbird_emif_reg_data, 0);
 }
 
-#endif
+#endif /* CONFIG_SKIP_LOWLEVEL_INIT */
 
 static void request_and_set_gpio(int gpio, char *name, int value)
 {
