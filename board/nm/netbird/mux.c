@@ -54,70 +54,6 @@ static struct module_pin_mux i2c0_pin_mux[] = {
 };
 
 
-#ifdef CONFIG_NAND
-static struct module_pin_mux nand_pin_mux[] = {
-	{OFFSET(gpmc_ad0),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD0  */
-	{OFFSET(gpmc_ad1),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD1  */
-	{OFFSET(gpmc_ad2),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD2  */
-	{OFFSET(gpmc_ad3),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD3  */
-	{OFFSET(gpmc_ad4),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD4  */
-	{OFFSET(gpmc_ad5),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD5  */
-	{OFFSET(gpmc_ad6),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD6  */
-	{OFFSET(gpmc_ad7),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD7  */
-#ifdef CONFIG_SYS_NAND_BUSWIDTH_16BIT
-	{OFFSET(gpmc_ad8),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD8  */
-	{OFFSET(gpmc_ad9),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD9  */
-	{OFFSET(gpmc_ad10),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD10 */
-	{OFFSET(gpmc_ad11),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD11 */
-	{OFFSET(gpmc_ad12),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD12 */
-	{OFFSET(gpmc_ad13),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD13 */
-	{OFFSET(gpmc_ad14),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD14 */
-	{OFFSET(gpmc_ad15),	(MODE(0) | PULLUDDIS | RXACTIVE)}, /* AD15 */
-#endif
-	{OFFSET(gpmc_wait0),	(MODE(0) | PULLUP_EN | RXACTIVE)}, /* nWAIT */
-	{OFFSET(gpmc_wpn),	(MODE(7) | PULLUP_EN)},		   /* nWP */
-	{OFFSET(gpmc_csn0),	(MODE(0) | PULLUP_EN)},		   /* nCS */
-	{OFFSET(gpmc_wen),	(MODE(0) | PULLDOWN_EN)},	   /* WEN */
-	{OFFSET(gpmc_oen_ren),	(MODE(0) | PULLDOWN_EN)},	   /* OE */
-	{OFFSET(gpmc_advn_ale),	(MODE(0) | PULLDOWN_EN)},	   /* ADV_ALE */
-	{OFFSET(gpmc_be0n_cle),	(MODE(0) | PULLDOWN_EN)},	   /* BE_CLE */
-	{-1},
-};
-#elif defined(CONFIG_NOR)
-static struct module_pin_mux bone_norcape_pin_mux[] = {
-	{OFFSET(gpmc_a0), MODE(0) | PULLUDDIS},			/* NOR_A0 */
-	{OFFSET(gpmc_a1), MODE(0) | PULLUDDIS},			/* NOR_A1 */
-	{OFFSET(gpmc_a2), MODE(0) | PULLUDDIS},			/* NOR_A2 */
-	{OFFSET(gpmc_a3), MODE(0) | PULLUDDIS},			/* NOR_A3 */
-	{OFFSET(gpmc_a4), MODE(0) | PULLUDDIS},			/* NOR_A4 */
-	{OFFSET(gpmc_a5), MODE(0) | PULLUDDIS},			/* NOR_A5 */
-	{OFFSET(gpmc_a6), MODE(0) | PULLUDDIS},			/* NOR_A6 */
-	{OFFSET(gpmc_a7), MODE(0) | PULLUDDIS},			/* NOR_A7 */
-	{OFFSET(gpmc_ad0), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD0 */
-	{OFFSET(gpmc_ad1), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD1 */
-	{OFFSET(gpmc_ad2), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD2 */
-	{OFFSET(gpmc_ad3), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD3 */
-	{OFFSET(gpmc_ad4), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD4 */
-	{OFFSET(gpmc_ad5), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD5 */
-	{OFFSET(gpmc_ad6), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD6 */
-	{OFFSET(gpmc_ad7), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD7 */
-	{OFFSET(gpmc_ad8), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD8 */
-	{OFFSET(gpmc_ad9), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD9 */
-	{OFFSET(gpmc_ad10), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD10 */
-	{OFFSET(gpmc_ad11), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD11 */
-	{OFFSET(gpmc_ad12), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD12 */
-	{OFFSET(gpmc_ad13), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD13 */
-	{OFFSET(gpmc_ad14), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD14 */
-	{OFFSET(gpmc_ad15), MODE(0) | PULLUDDIS | RXACTIVE},	/* NOR_AD15 */
-	{OFFSET(gpmc_csn0), MODE(0) | PULLUDEN | PULLUP_EN},     /* CE */
-	{OFFSET(gpmc_advn_ale), MODE(0) | PULLUDEN | PULLDOWN_EN}, /* ALE */
-	{OFFSET(gpmc_oen_ren), MODE(0) | PULLUDEN | PULLDOWN_EN},/* OEn_REN */
-	{OFFSET(gpmc_be0n_cle), MODE(0) | PULLUDEN | PULLDOWN_EN},/* unused */
-	{OFFSET(gpmc_wen), MODE(0) | PULLUDEN | PULLDOWN_EN},    /* WEN */
-	{OFFSET(gpmc_wait0), MODE(0) | PULLUDEN | PULLUP_EN | RXACTIVE},/*WAIT*/
-	{-1},
-};
-#endif
 
 static struct module_pin_mux uart0_netbird_pin_mux[] = {
 	{OFFSET(uart0_rxd), (MODE(0) | PULLUDEN | PULLUP_EN | RXACTIVE)},	/* UART0_RXD */
@@ -212,12 +148,13 @@ static struct module_pin_mux usb_netbird_pin_mux[] = {
 	{-1},
 };
 
-#if defined(CONFIG_NOR_BOOT)
-void enable_norboot_pin_mux(void)
-{
-	configure_module_pin_mux(bone_norcape_pin_mux);
-}
-#endif
+static struct module_pin_mux unused_netbird_pin_mux[] = {
+	{OFFSET(lcd_data6), (MODE(7) | PULLUDEN | PULLDOWN_EN)},	/* SYSBOOT6 is not used bulldown active, receiver disabled */
+	{OFFSET(lcd_data7), (MODE(7) | PULLUDEN | PULLDOWN_EN)},	/* SYSBOOT7 is not used bulldown active, receiver disabled */
+	{OFFSET(lcd_data10), (MODE(7) | PULLUDEN | PULLDOWN_EN)},	/* SYSBOOT10 is not used bulldown active, receiver disabled */
+	{OFFSET(lcd_data11), (MODE(7) | PULLUDEN | PULLDOWN_EN)},	/* SYSBOOT11 is not used bulldown active, receiver disabled */
+	{-1},
+};
 
 void enable_uart0_pin_mux(void)
 {
@@ -286,4 +223,5 @@ void enable_board_pin_mux(void)
 	configure_module_pin_mux(usb_netbird_pin_mux);
 	configure_module_pin_mux(usb_netbird_pin_mux);
 	configure_module_pin_mux(i2c0_pin_mux);
+	configure_module_pin_mux(unused_netbird_pin_mux);
 }
