@@ -382,6 +382,14 @@ config TARGET_AM335X_NETBIRD
 	select DM_SERIAL
 	select DM_GPIO
 
+config TARGET_AM335X_NETBIRD_V2
+	bool "Support am335x_netbird_v2"
+	select CPU_V7
+	select SUPPORT_SPL
+	select DM
+	select DM_SERIAL
+	select DM_GPIO
+
 config TARGET_AM335X_SL50
 	bool "Support am335x_sl50"
 	select CPU_V7
@@ -879,6 +887,7 @@ source "board/imx31_phycore/Kconfig"
 source "board/isee/igep0033/Kconfig"
 source "board/mpl/vcma9/Kconfig"
 source "board/nm/netbird/Kconfig"
+source "board/nm/netbird_v2/Kconfig"
 source "board/olimex/mx23_olinuxino/Kconfig"
 source "board/phytec/pcm051/Kconfig"
 source "board/phytec/pcm052/Kconfig"
