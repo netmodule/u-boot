@@ -58,6 +58,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define NETBIRD_GPIO_LED_A		GPIO_TO_PIN(1, 14)
 #define NETBIRD_GPIO_LED_B		GPIO_TO_PIN(1, 15)
 #define NETBIRD_GPIO_RESET_BUTTON	GPIO_TO_PIN(0, 2)
+#define NETBIRD_GPIO_USB_PWR_EN		GPIO_TO_PIN(1, 27)
 
 #define DDR3_CLOCK_FREQUENCY (400)
 
@@ -153,7 +154,6 @@ void am33xx_spl_board_init(void)
 	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_ENABLE1, 0, 0x02)) {
 		puts ("tps65218_reg_write failure (DCDC2 disable)\n");
 	};
-
 
 	/* Set MPU Frequency to what we detected now that voltages are set */
 	do_setup_dpll(&dpll_mpu_regs, &dpll_mpu_opp100);
@@ -332,11 +332,23 @@ int board_init(void)
 	REQUEST_AND_SET_GPIO(NETBIRD_GPIO_RST_PHY_N);
 	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_WLAN_EN);
 	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_BT_EN);
+	REQUEST_AND_SET_GPIO(NETBIRD_GPIO_USB_PWR_EN);
+
 	/* There are two funcions on the same mux mode for MMC2_DAT7 we want
 	 * to use RMII2_CRS_DV so we need to set SMA2 Register to 1
 	 * See SPRS717J site 49 (10)*/
 	#define SMA2_REGISTER (CTRL_BASE + 0x1320)
 	writel(0x01, SMA2_REGISTER); /* Select RMII2_CRS_DV instead of MMC2_DAT7 */
+
+	/* Configure 500mA on LS2 */
+	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_CONFIG2, 0x02, 0x03)) {
+		puts ("tps65218_reg_write failure (LS2 enable)\n");
+	};
+
+	/* Enable LS2 */
+	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_ENABLE2, 0x04, 0x04)) {
+		puts ("tps65218_reg_write failure (LS2 enable)\n");
+	};
 
 	printf("OSC: %lu Hz\n", get_osclk());
 
