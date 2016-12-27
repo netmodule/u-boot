@@ -1053,22 +1053,15 @@ bd_bool_t BD_GetPartition64( const BD_Context* pCtx, bd_uint16_t tag,
 
   /* Argument check */
 
-    if (pCtx == 0) {
-        return BD_FALSE;
-    }
-    writel(1<<14, 0x4804c13c); /* set gpio out */
+  if (pCtx == 0) {
+      return BD_FALSE;
+  }
   if ( (pResult == 0)
        || !pCtx->initialized
        || (index >= pCtx->entries)
      )
   {
-mdelay(1000);
-writel(1<<14, 0x4804c190); /* set gpio out */
-    return BD_FALSE;
-  }
 
-mdelay(1000);
-writel(1<<14, 0x4804c190); /* set gpio out */
   /* Clear result */
   memset( pResult, 0x00, sizeof(BD_PartitionEntry64) );
 
