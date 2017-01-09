@@ -43,7 +43,7 @@
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"kernel_image=kernel.bin\0"	\
-	"fdt_image=openwrt-nbhw16.dtb\0"	\
+	"fdt_image=openwrt-nbhw16-nb800.dtb\0"	\
 	"modeboot=sdboot\0" \
 	"fdt_addr=0x82000000\0" \
 	"kernel_addr=0x80000000\0" \
