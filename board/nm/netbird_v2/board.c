@@ -355,6 +355,58 @@ int board_init(void)
 	return 0;
 }
 
+/* Enable the ecap2 pwm see siemens/pxm2 */
+static int enable_pwm(void)
+{
+#define PWM_TICKS	0xBEB
+#define PWM_DUTY	0x5F5
+#define AM33XX_ECAP2_BASE 0x48304100
+#define PWMSS2_BASE 0x48304000
+	struct pwmss_regs *pwmss = (struct pwmss_regs *)PWMSS2_BASE;
+	struct pwmss_ecap_regs *ecap;
+	int ticks = PWM_TICKS;
+	int duty = PWM_DUTY;
+
+	ecap = (struct pwmss_ecap_regs *)AM33XX_ECAP2_BASE;
+	/* enable clock */
+	setbits_le32(&pwmss->clkconfig, ECAP_CLK_EN);
+	/* TimeStamp Counter register */
+	writel(0x0, &ecap->ctrphs);
+
+	setbits_le16(&ecap->ecctl2,
+			 (ECTRL2_MDSL_ECAP | ECTRL2_SYNCOSEL_MASK));
+
+	/* config period */
+	writel(ticks - 1, &ecap->cap3);
+	writel(ticks - 1, &ecap->cap1);
+	/* config duty */
+	writel(duty, &ecap->cap2);
+	writel(duty, &ecap->cap4);
+	/* start */
+	setbits_le16(&ecap->ecctl2, ECTRL2_CTRSTP_FREERUN);
+	return 0;
+}
+
+/* Enable the input clock for ecap2 and then enable the pwm */
+static void enable_wlan_clock(void)
+{
+	struct cm_perpll *const cmper = (struct cm_perpll*)CM_PER;
+	struct ctrl_dev *const cdev= (struct ctrl_dev*)CTRL_DEVICE_BASE;
+	u32 *const clk_domains[] = { 0 };
+
+	u32 *const clk_modules_nmspecific[] = {
+		&cmper->epwmss2clkctrl,
+		0
+	};
+
+	do_enable_clocks(clk_domains, clk_modules_nmspecific, 1);
+
+	/* Enable timebase clock for pwmss2 */
+	writel(0x04, &cdev->pwmssctrl);
+
+	enable_pwm();
+}
+
 #ifdef CONFIG_BOARD_LATE_INIT
 int board_late_init(void)
 {
@@ -393,6 +445,8 @@ int board_late_init(void)
 
 	set_board_info_env(name);
 #endif
+
+	enable_wlan_clock();
 
 	return 0;
 }

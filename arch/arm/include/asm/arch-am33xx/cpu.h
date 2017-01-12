@@ -410,7 +410,7 @@ struct cm_dpll {
 	unsigned int resv1;
 	unsigned int clktimer2clk;	/* offset 0x04 */
 	unsigned int resv2[11];
-	unsigned int clkselmacclk;	/* offset 0x34 */ 
+	unsigned int clkselmacclk;	/* offset 0x34 */
 };
 #endif /* CONFIG_AM43XX */
 
@@ -530,10 +530,12 @@ struct ctrl_dev {
 	unsigned int macid1h;		/* offset 0x3c */
 	unsigned int resv4[4];
 	unsigned int miisel;		/* offset 0x50 */
-	unsigned int resv5[7];
+	unsigned int resv5[4];
+	unsigned int pwmssctrl;		/* offset 0x64 */
+	unsigned int resv6[2];
 	unsigned int mreqprio_0;	/* offset 0x70 */
 	unsigned int mreqprio_1;	/* offset 0x74 */
-	unsigned int resv6[97];
+	unsigned int resv7[97];
 	unsigned int efuse_sma;		/* offset 0x1FC */
 };
 

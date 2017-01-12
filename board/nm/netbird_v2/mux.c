@@ -129,7 +129,7 @@ static struct module_pin_mux gpio_netbird_pin_mux[] = {
 	{OFFSET(mii1_rxdv), (MODE(7) | PULLUDDIS)},	/* (J17) gmii1_rxdv.gpio3[4] */  /* BT_EN */
 	{OFFSET(mii1_rxdv), (MODE(7) | RXACTIVE)},	/* (K18) gmii1_txclk.gpio3[9] */  /* WLAN_IRQ */
 	{OFFSET(mii1_rxclk), (MODE(7) | PULLUDDIS)},	/* (L18) gmii1_rxclk.gpio3[10] */  /* WLAN_EN */
-	{OFFSET(mcasp0_ahclkr), (MODE(7) | PULLUDDIS)},	/* (C12) mcasp0_ahclkr.gpio3[17] */  /* WLAN_CLK (32k Linux only) */
+	{OFFSET(mcasp0_ahclkr), (MODE(4) | PULLUDEN | PULLUP_EN)},	/* (C12) mcasp0_ahclkr.ecap2_in_pwm2_out */  /* WLAN_CLK */
 	{-1},
 };
 
