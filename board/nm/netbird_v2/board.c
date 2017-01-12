@@ -84,10 +84,10 @@ struct serial_device *default_serial_console(void)
 
 static const struct ddr_data ddr3_netbird_data = {
 	/* Ratios were optimized by DDR3 training software from TI */
-	.datardsratio0 = 0x37,
-	.datawdsratio0 = 0x42,
+	.datardsratio0 = 0x39,
+	.datawdsratio0 = 0x3f,
 	.datafwsratio0 = 0x98,
-	.datawrsratio0 = 0x7a,
+	.datawrsratio0 = 0x7d,
 };
 
 static const struct cmd_control ddr3_netbird_cmd_ctrl_data = {
