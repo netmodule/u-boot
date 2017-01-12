@@ -134,7 +134,7 @@ static struct module_pin_mux gpio_netbird_pin_mux[] = {
 };
 
 static struct module_pin_mux usb_netbird_pin_mux[] = {
-	{OFFSET(usb0_drvvbus), (MODE(0) | PULLUDEN | PULLDOWN_EN)},	/* (F16) USB0_DRVVBUS.USB0_DRVVBUS */  /* PWM */
+	{OFFSET(usb0_drvvbus), (MODE(0) | PULLUDDIS | PULLDOWN_EN)},	/* (F16) USB0_DRVVBUS.USB0_DRVVBUS */  /* PWM */
 	{OFFSET(usb1_drvvbus), (MODE(0) | PULLUDDIS | PULLDOWN_EN)},	/* (F15) USB1_DRVVBUS.USB1_DRVVBUS */  /* RST_PHY~ */
 	{-1},
 };
@@ -210,7 +210,6 @@ void enable_board_pin_mux(void)
 	configure_module_pin_mux(rmii1_netbird_pin_mux);
 	configure_module_pin_mux(mmc0_sdio_netbird_pin_mux);
 	configure_module_pin_mux(mmc1_emmc_netbird_pin_mux);
-	configure_module_pin_mux(usb_netbird_pin_mux);
 	configure_module_pin_mux(usb_netbird_pin_mux);
 	configure_module_pin_mux(i2c0_pin_mux);
 	configure_module_pin_mux(unused_netbird_pin_mux);
