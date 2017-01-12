@@ -315,30 +315,47 @@ int board_init(void)
 	gpmc_init();
 #endif
 
-	/* Power on the supply of the gsm modem */
-	REQUEST_AND_SET_GPIO(NETBIRD_GPIO_SUPPLY_GSM);
-	mdelay(100);
-	/* Take modem out of reset */
-	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_RST_GSM);
-	udelay(10000);
+	/* Remove power, and make sure reset is set once */
+	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_SUPPLY_GSM);
+	REQUEST_AND_SET_GPIO(NETBIRD_GPIO_RST_GSM);
+	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_PWR_GSM);
+	mdelay(20);
+	/* Enable gsm supply */
+	gpio_set_value(NETBIRD_GPIO_SUPPLY_GSM, 1);
+	mdelay(20);
+	/* Take modem out of reset, we have to wait 300ms afterwards */
+	gpio_set_value(NETBIRD_GPIO_RST_GSM, 0);
+	mdelay(300);
 	/* Do power up sequence, this modem has a special power up sequence
 	 * where we have to pull PWR for > 1s but < 7s (see manual) */
-	REQUEST_AND_SET_GPIO(NETBIRD_GPIO_PWR_GSM);
+	gpio_set_value(NETBIRD_GPIO_PWR_GSM, 1);
 	mdelay(1200);
 	gpio_set_value(NETBIRD_GPIO_PWR_GSM, 0);
-	/* Enable debug LED to troubleshoot hw problems */
+
 	REQUEST_AND_SET_GPIO(NETBIRD_GPIO_LED_A);
 	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_LED_B);
 	REQUEST_AND_SET_GPIO(NETBIRD_GPIO_RST_PHY_N);
 	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_WLAN_EN);
 	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_BT_EN);
-	REQUEST_AND_SET_GPIO(NETBIRD_GPIO_USB_PWR_EN);
 
 	/* There are two funcions on the same mux mode for MMC2_DAT7 we want
 	 * to use RMII2_CRS_DV so we need to set SMA2 Register to 1
 	 * See SPRS717J site 49 (10)*/
 	#define SMA2_REGISTER (CTRL_BASE + 0x1320)
 	writel(0x01, SMA2_REGISTER); /* Select RMII2_CRS_DV instead of MMC2_DAT7 */
+
+	/* Discharge LS2 to have proper 0V at the output */
+	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_CONFIG3, 0x02, 0x02)) {
+		puts ("tps65218_reg_write failure (LS2 discharge)\n");
+	};
+	REQUEST_AND_SET_GPIO(NETBIRD_GPIO_USB_PWR_EN);
+
+	mdelay(50);
+
+	/* Disable discharge LS2 */
+	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_CONFIG3, 0x00, 0x02)) {
+		puts ("tps65218_reg_write failure (LS2 discharge)\n");
+	};
 
 	/* Configure 500mA on LS2 */
 	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_CONFIG2, 0x02, 0x03)) {
