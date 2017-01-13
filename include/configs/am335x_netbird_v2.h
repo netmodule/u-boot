@@ -49,7 +49,7 @@
 	"kernel_addr=0x80000000\0" \
 	"load_addr=0x83000000\0" \
 	"root_part=1\0" /* Default root partition, overwritte in board/mv_ebu/a38x/nbhw14_env.c */ \
-	"add_sd_bootargs=setenv bootargs $bootargs root=/dev/mmcblk0p$root_part rootfstype=ext4 console=ttyO1,115200 rootwait earlyprintk\0" \
+	"add_sd_bootargs=setenv bootargs $bootargs root=/dev/mmcblk0p$root_part rootfstype=ext4 console=ttyS1,115200 rootwait loglevel=4\0" \
 	"add_version_bootargs=setenv bootargs $bootargs\0" \
 	"fdt_skip_update=yes\0" \
     "ethprime=cpsw\0" \
