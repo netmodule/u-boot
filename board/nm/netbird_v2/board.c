@@ -367,7 +367,7 @@ int board_init(void)
 		puts ("tps65218_reg_write failure (LS2 enable)\n");
 	};
 
-	printf("OSC: %lu Hz\n", get_osclk());
+	printf("OSC:   %lu Hz\n", get_osclk());
 
 	return 0;
 }
@@ -447,6 +447,7 @@ int board_late_init(void)
 	if (bd_get_hw_version(&hw_ver, &hw_rev)==0) {
 		char hw_versions[128];
 		char new_env[256];
+		printf("HW16:  V%d.%d\n", hw_ver, hw_rev);
 		snprintf(hw_versions, sizeof(hw_versions), "CP=%d.%d", hw_ver, hw_rev);
 		snprintf(new_env, sizeof(new_env), "setenv bootargs $bootargs %s", hw_versions);
 		setenv("add_version_bootargs", new_env);
