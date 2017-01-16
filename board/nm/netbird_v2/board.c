@@ -301,6 +301,41 @@ int check_reset_button(void)
 	return 0;
 }
 
+static void enable_ext_usb(void)
+{
+	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_USB_PWR_EN);
+	/* Disable LS2 */
+	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_ENABLE2, 0x00, 0x04)) {
+		puts ("tps65218_reg_write failure (LS2 enable)\n");
+	};
+
+	/* Discharge LS2 to have proper 0V at the output */
+	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_CONFIG3, 0x02, 0x02)) {
+		puts ("tps65218_reg_write failure (LS2 discharge)\n");
+	};
+
+	mdelay(10);
+
+	gpio_set_value(NETBIRD_GPIO_USB_PWR_EN, 1);
+
+	mdelay(50);
+
+	/* Disable discharge LS2 */
+	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_CONFIG3, 0x00, 0x02)) {
+		puts ("tps65218_reg_write failure (LS2 discharge)\n");
+	};
+
+	/* Configure 500mA on LS2 */
+	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_CONFIG2, 0x02, 0x03)) {
+		puts ("tps65218_reg_write failure (LS2 enable)\n");
+	};
+
+	/* Enable LS2 */
+	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_ENABLE2, 0x04, 0x04)) {
+		puts ("tps65218_reg_write failure (LS2 enable)\n");
+	};
+}
+
 /*
  * Basic board specific setup.  Pinmux has been handled already.
  */
@@ -344,28 +379,7 @@ int board_init(void)
 	#define SMA2_REGISTER (CTRL_BASE + 0x1320)
 	writel(0x01, SMA2_REGISTER); /* Select RMII2_CRS_DV instead of MMC2_DAT7 */
 
-	/* Discharge LS2 to have proper 0V at the output */
-	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_CONFIG3, 0x02, 0x02)) {
-		puts ("tps65218_reg_write failure (LS2 discharge)\n");
-	};
-	REQUEST_AND_SET_GPIO(NETBIRD_GPIO_USB_PWR_EN);
-
-	mdelay(50);
-
-	/* Disable discharge LS2 */
-	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_CONFIG3, 0x00, 0x02)) {
-		puts ("tps65218_reg_write failure (LS2 discharge)\n");
-	};
-
-	/* Configure 500mA on LS2 */
-	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_CONFIG2, 0x02, 0x03)) {
-		puts ("tps65218_reg_write failure (LS2 enable)\n");
-	};
-
-	/* Enable LS2 */
-	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_ENABLE2, 0x04, 0x04)) {
-		puts ("tps65218_reg_write failure (LS2 enable)\n");
-	};
+	enable_ext_usb();
 
 	printf("OSC:   %lu Hz\n", get_osclk());
 
