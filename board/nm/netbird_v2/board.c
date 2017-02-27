@@ -34,7 +34,8 @@
 #include <environment.h>
 #include <watchdog.h>
 #include <environment.h>
-#include "board_descriptor.h"
+#include "../common/bdparser.h"
+#include "../common/board_descriptor.h"
 #include "board.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -67,12 +68,38 @@ DECLARE_GLOBAL_DATA_PTR;
 static struct ctrl_dev *cdev = (struct ctrl_dev *)CTRL_DEVICE_BASE;
 #endif
 
+#define BD_EEPROM_ADDR			(0x50)	/* CPU BD EEPROM (8kByte) is at 50 (A0) */
+#define BD_ADDRESS				(0x0000)  /* Board descriptor at beginning of EEPROM */
+#define PD_ADDRESS				(0x0200)  /* Product descriptor */
+#define PARTITION_ADDRESS		(0x0600)  /* Partition Table */
+
+static BD_Context   bdctx[3];		/* The descriptor context */
+
+static int _bd_init(void)
+{
+	if (bd_get_context(&bdctx[0], BD_EEPROM_ADDR, BD_ADDRESS) != 0) {
+		printf("%s() no valid bd found\n", __func__);
+		return -1;
+	}
+
+	if (bd_get_context(&bdctx[1], BD_EEPROM_ADDR, PD_ADDRESS) != 0) {
+		printf("%s() no valid pd found (legacy support)\n", __func__);
+	}
+
+	if (bd_get_context(&bdctx[2], BD_EEPROM_ADDR, PARTITION_ADDRESS) != 0) {
+		printf("%s() no valid partition table found\n", __func__);
+	}
+
+	bd_register_context_list(bdctx, ARRAY_SIZE(bdctx));
+    return 0;
+}
+
 /*
  * Read header information from EEPROM into global structure.
  */
 static inline int __maybe_unused read_eeprom(void)
 {
-	return bd_read(-1, CONFIG_SYS_I2C_EEPROM_ADDR);
+    return _bd_init();
 }
 
 struct serial_device *default_serial_console(void)
@@ -438,11 +465,40 @@ static void enable_wlan_clock(void)
 	enable_pwm();
 }
 
+#if !defined(CONFIG_SPL_BUILD)
+
+static void set_devicetree_name(void)
+{
+	char devicetreename[64];
+	/* add hardware versions to environment */
+	if (bd_get_devicetree(devicetreename, sizeof(devicetreename)) != 0) {
+		printf("Devicetree name not found, use legacy name\n");
+		strcpy(devicetreename, "am335x-nbhw16-prod2.dtb");
+	}
+
+	setenv("fdt_image", devicetreename);
+}
+
+static void get_hw_version(void)
+{
+	int hw_ver, hw_rev;
+	char hw_versions[16];
+	char new_env[256];
+
+	/* add hardware versions to environment */
+	bd_get_hw_version(&hw_ver, &hw_rev);
+	printf("HW16:  V%d.%d\n", hw_ver, hw_rev);
+	snprintf(hw_versions, sizeof(hw_versions), "CP=%d.%d", hw_ver, hw_rev);
+	snprintf(new_env, sizeof(new_env), "setenv bootargs $bootargs %s", hw_versions);
+	setenv("add_version_bootargs", new_env);
+}
+
+#endif
+
 #ifdef CONFIG_BOARD_LATE_INIT
 int board_late_init(void)
 {
 #if !defined(CONFIG_SPL_BUILD)
-	int hw_ver, hw_rev;
 	int boot_partition;
 
 	if (read_eeprom() < 0)
@@ -457,18 +513,11 @@ int board_late_init(void)
 	/* mmcblk0p1 => root0, mmcblk0p2 => root1 so +1 */
 	setenv_ulong("root_part", boot_partition + 1);
 
-	/* add hardware versions to environment */
-	if (bd_get_hw_version(&hw_ver, &hw_rev)==0) {
-		char hw_versions[128];
-		char new_env[256];
-		printf("HW16:  V%d.%d\n", hw_ver, hw_rev);
-		snprintf(hw_versions, sizeof(hw_versions), "CP=%d.%d", hw_ver, hw_rev);
-		snprintf(new_env, sizeof(new_env), "setenv bootargs $bootargs %s", hw_versions);
-		setenv("add_version_bootargs", new_env);
-	}
-
 	check_reset_button();
 
+	get_hw_version();
+
+	set_devicetree_name();
 #endif
 
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
@@ -560,7 +609,6 @@ int board_eth_init(bd_t *bis)
 {
 	int rv, n = 0;
 	uint8_t mac_addr0[6] = {02,00,00,00,00,01};
-	uint8_t mac_addr1[6] = {02,00,00,00,00,02};
 	__maybe_unused struct ti_am_eeprom *header;
 
 #if !defined(CONFIG_SPL_BUILD)
@@ -568,11 +616,8 @@ int board_eth_init(bd_t *bis)
 
 	cpsw_data.mdio_div = 0x3E;
 
-	bd_get_mac_address(0, mac_addr0, sizeof(mac_addr0));
+	bd_get_mac(0, mac_addr0, sizeof(mac_addr0));
 	set_mac_address(0, mac_addr0);
-
-	bd_get_mac_address(1, mac_addr1, sizeof(mac_addr1));
-	set_mac_address(1, mac_addr1);
 
 	writel(RMII_MODE_ENABLE | RMII_CHIPCKL_ENABLE, &cdev->miisel);
 	cpsw_slaves[0].phy_if = PHY_INTERFACE_MODE_RMII;

@@ -112,6 +112,7 @@ static const BD_Info bd_info[] = {
   { BD_Hmac_Sha1_4        , BD_Type_HMAC       , "hmac-sha1"          },
 
   { BD_Ui_Adapter_Type    , BD_Type_UInt16     , "ui_adapter_type"    },
+  { PD_Dev_Tree           , BD_Type_String     , "pd_dev_tree"        },
 
   /* Guard entry, must be last in array (don't remove) */
   { BD_End                , BD_Type_End        , 0                    },

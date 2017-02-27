@@ -160,6 +160,15 @@ typedef enum _BD_Tags
 
   BD_Ui_Adapter_Type    =  4096,   /**<  "UInt16"     -> IV OG2 UI adapterboard type (0 = not present) */
 
+  BD_Pd_Module0         =  4100,
+  BD_Pd_Module1         =  4101,
+  BD_Pd_Module2         =  4102,
+  BD_Pd_Module3         =  4103,
+  BD_Pd_Module4         =  4104,
+  BD_Pd_Module5         =  4105,
+  BD_Pd_Sim             =  4122,
+  PD_Dev_Tree           =  4125,   /**<  "String"     -> Devicetree file name */
+
   /* project specific tags */
   BD_BootPart			= 32768,   /**<  "UInt8" */
 
