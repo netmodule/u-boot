@@ -60,6 +60,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define NETBIRD_GPIO_LED_B		GPIO_TO_PIN(1, 15)
 #define NETBIRD_GPIO_RESET_BUTTON	GPIO_TO_PIN(0, 2)
 #define NETBIRD_GPIO_USB_PWR_EN		GPIO_TO_PIN(1, 27)
+#define NETBIRD_GPIO_USB_PWR_EN_2	GPIO_TO_PIN(2, 4) // On new version this gpio is used
 
 #define DDR3_CLOCK_FREQUENCY (400)
 
@@ -331,6 +332,7 @@ int check_reset_button(void)
 static void enable_ext_usb(void)
 {
 	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_USB_PWR_EN);
+	REQUEST_AND_CLEAR_GPIO(NETBIRD_GPIO_USB_PWR_EN_2);
 	/* Disable LS2 */
 	if (tps65218_reg_write(TPS65218_PROT_LEVEL_2, TPS65218_ENABLE2, 0x00, 0x04)) {
 		puts ("tps65218_reg_write failure (LS2 enable)\n");
@@ -344,6 +346,7 @@ static void enable_ext_usb(void)
 	mdelay(10);
 
 	gpio_set_value(NETBIRD_GPIO_USB_PWR_EN, 1);
+	gpio_set_value(NETBIRD_GPIO_USB_PWR_EN_2, 1);
 
 	mdelay(50);
 
