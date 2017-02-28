@@ -214,4 +214,7 @@
 
 #undef CONFIG_CMD_PXE
 
+/* Never enable ISO it is broaken and can lead to a crash */
+#undef CONFIG_ISO_PARTITION
+
 #endif	/* ! __CONFIG_AM335X_NETBIRD_V2_H */

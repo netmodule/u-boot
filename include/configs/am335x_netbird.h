@@ -213,4 +213,7 @@
 #define CONFIG_POWER_TPS65217
 #define CONFIG_POWER_TPS62362
 
+/* Never enable ISO it is broaken and can lead to a crash */
+#undef CONFIG_ISO_PARTITION
+
 #endif	/* ! __CONFIG_AM335X_EVM_H */
