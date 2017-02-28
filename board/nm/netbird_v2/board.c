@@ -493,6 +493,15 @@ static void get_hw_version(void)
 	setenv("add_version_bootargs", new_env);
 }
 
+static void check_fct(void)
+{
+	uchar buffer[1];
+	if (i2c_read(0x51, 0, 2, buffer, 1) == 0) {
+		printf("Entering fct mode\n");
+		setenv ("bootcmd", "");
+	}
+}
+
 #endif
 
 #ifdef CONFIG_BOARD_LATE_INIT
@@ -528,6 +537,10 @@ int board_late_init(void)
 #endif
 
 	enable_wlan_clock();
+
+#if !defined(CONFIG_SPL_BUILD)
+	check_fct();
+#endif
 
 	return 0;
 }
