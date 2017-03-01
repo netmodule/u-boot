@@ -54,7 +54,7 @@
 	"fdt_skip_update=yes\0" \
     "ethprime=cpsw\0" \
 	"sdbringup=echo Try bringup boot && ext4load mmc 1:$root_part $kernel_addr /boot/zImage && " \
-			"ext4load mmc 1:$root_part $fdt_addr /boot/am335x-nbhw16-nb800.dtb && setenv bootargs $bootargs rw;\0" \
+			"ext4load mmc 1:$root_part $fdt_addr /boot/$fdt_image && setenv bootargs $bootargs rw;\0" \
 	"sdprod=ext4load mmc 1:$root_part $kernel_addr /boot/$kernel_image && " \
 			"ext4load mmc 1:$root_part $fdt_addr /boot/$fdt_image && setenv bootargs $bootargs ro;\0" \
 	"sdboot=if mmc dev 1; then echo Copying Linux from SD to RAM...; "\
