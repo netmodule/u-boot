@@ -498,8 +498,8 @@ static void get_hw_version(void)
 
 static void check_fct(void)
 {
-	uchar buffer[1];
-	if (i2c_read(0x51, 0, 2, buffer, 1) == 0) {
+	/* If probe fails we are sure no eeprom is connected */
+	if (i2c_probe(0x51) == 0) {
 		printf("Entering fct mode\n");
 		setenv ("bootcmd", "");
 	}
