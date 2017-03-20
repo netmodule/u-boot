@@ -40,6 +40,11 @@
 
 #include <config_distro_bootcmd.h>
 
+#define CONFIG_ARP_TIMEOUT	    200
+#undef CONFIG_NET_RETRY_COUNT
+#define CONFIG_NET_RETRY_COUNT	5
+#define CONFIG_BOOTP_MAY_FAIL
+
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"kernel_image=kernel.bin\0"	\
@@ -52,7 +57,8 @@
 	"add_sd_bootargs=setenv bootargs $bootargs root=/dev/mmcblk0p$root_part rootfstype=ext4 console=ttyS1,115200 rootwait loglevel=4\0" \
 	"add_version_bootargs=setenv bootargs $bootargs\0" \
 	"fdt_skip_update=yes\0" \
-    "ethprime=cpsw\0" \
+	"ethprime=cpsw\0" \
+	"bootpretryperiod=1000\0" \
 	"sdbringup=echo Try bringup boot && ext4load mmc 1:$root_part $kernel_addr /boot/zImage && " \
 			"ext4load mmc 1:$root_part $fdt_addr /boot/$fdt_image && setenv bootargs $bootargs rw;\0" \
 	"sdprod=ext4load mmc 1:$root_part $kernel_addr /boot/$kernel_image && " \
@@ -65,7 +71,13 @@
 	"bootcmd=run sdboot\0" \
 	"ipaddr=192.168.1.1\0" \
 	"serverip=192.168.1.254\0" \
-	"recovery=tftpboot $kernel_addr recovery-image; tftpboot $fdt_addr recovery-dtb; setenv bootargs rdinit=/etc/preinit console=ttyO0,115200 debug; bootz $kernel_addr - $fdt_addr\0"
+	"setenv fdt_addr_r $fdt_addr\0" \
+	"setenv kernel_addr_r $kernel_addr\0" \
+	"setenv ramdisk_addr_r $load_addr\0" \
+	"tftp_recovery=tftpboot $kernel_addr recovery-image; tftpboot $fdt_addr recovery-dtb; setenv bootargs rdinit=/etc/preinit console=ttyO1,115200 debug; bootz $kernel_addr - $fdt_addr\0" \
+	"pxe_recovery=setenv autoload false && dhcp && pxe get && pxe boot\0" \
+	"recovery=run pxe_recovery || setenv ipaddr $ipaddr; setenv serverip $serverip; run tftp_recovery\0" /* setenv ipaddr and serverip is necessary, because dhclient can destroy the IPs inernally */
+
 #endif
 
 /* NS16550 Configuration */
@@ -212,7 +224,7 @@
 #define CONFIG_POWER_TPS65217
 #define CONFIG_POWER_TPS62362
 
-#undef CONFIG_CMD_PXE
+#define CONFIG_CMD_PXE
 
 /* Never enable ISO it is broaken and can lead to a crash */
 #undef CONFIG_ISO_PARTITION
