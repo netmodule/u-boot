@@ -71,7 +71,7 @@
 	"bootcmd=run sdboot\0" \
 	"ipaddr=192.168.1.1\0" \
 	"serverip=192.168.1.254\0" \
-	"pxefile_addr_r=82800000\0" \
+	"pxefile_addr_r=0x82800000\0" \
 	"fdt_addr_r=$fdt_addr\0" \
 	"kernel_addr_r=$kernel_addr\0" \
 	"ramdisk_addr_r=$load_addr\0" \
