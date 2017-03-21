@@ -71,9 +71,9 @@
 	"bootcmd=run sdboot\0" \
 	"ipaddr=192.168.1.1\0" \
 	"serverip=192.168.1.254\0" \
-	"setenv fdt_addr_r $fdt_addr\0" \
-	"setenv kernel_addr_r $kernel_addr\0" \
-	"setenv ramdisk_addr_r $load_addr\0" \
+	"fdt_addr_r=$fdt_addr\0" \
+	"kernel_addr_r=$kernel_addr\0" \
+	"ramdisk_addr_r=$load_addr\0" \
 	"tftp_recovery=tftpboot $kernel_addr recovery-image; tftpboot $fdt_addr recovery-dtb; setenv bootargs rdinit=/etc/preinit console=ttyO1,115200 debug; bootz $kernel_addr - $fdt_addr\0" \
 	"pxe_recovery=setenv autoload false && dhcp && pxe get && pxe boot\0" \
 	"recovery=run pxe_recovery || setenv ipaddr $ipaddr; setenv serverip $serverip; run tftp_recovery\0" /* setenv ipaddr and serverip is necessary, because dhclient can destroy the IPs inernally */
