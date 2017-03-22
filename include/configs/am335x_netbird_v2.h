@@ -46,13 +46,17 @@
 #define CONFIG_BOOTP_MAY_FAIL
 
 #ifndef CONFIG_SPL_BUILD
+#define KERNEL_ADDR "0x80000000"
+#define LOAD_ADDR "0x83000000"
+#define FDT_ADDR "0x82000000"
+#define PXE_ADDR "0x82800000"
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"kernel_image=kernel.bin\0"	\
 	"fdt_image=openwrt-nbhw16-nb800.dtb\0"	\
 	"modeboot=sdboot\0" \
-	"fdt_addr=0x82000000\0" \
-	"kernel_addr=0x80000000\0" \
-	"load_addr=0x83000000\0" \
+	"fdt_addr=" FDT_ADDR "\0" \
+	"kernel_addr=" KERNEL_ADDR "\0" \
+	"load_addr=" LOAD_ADDR "\0" \
 	"root_part=1\0" /* Default root partition, overwritte in board/mv_ebu/a38x/nbhw14_env.c */ \
 	"add_sd_bootargs=setenv bootargs $bootargs root=/dev/mmcblk0p$root_part rootfstype=ext4 console=ttyS1,115200 rootwait loglevel=4\0" \
 	"add_version_bootargs=setenv bootargs $bootargs\0" \
@@ -71,10 +75,10 @@
 	"bootcmd=run sdboot\0" \
 	"ipaddr=192.168.1.1\0" \
 	"serverip=192.168.1.254\0" \
-	"pxefile_addr_r=0x82800000\0" \
-	"fdt_addr_r=$fdt_addr\0" \
-	"kernel_addr_r=$kernel_addr\0" \
-	"ramdisk_addr_r=$load_addr\0" \
+	"pxefile_addr_r=" PXE_ADDR "\0" \
+	"fdt_addr_r=" FDT_ADDR "\0" \
+	"kernel_addr_r=" KERNEL_ADDR "\0" \
+	"ramdisk_addr_r=" LOAD_ADDR "\0" \
 	"tftp_recovery=tftpboot $kernel_addr recovery-image; tftpboot $fdt_addr recovery-dtb; setenv bootargs rdinit=/etc/preinit console=ttyO1,115200 debug; bootz $kernel_addr - $fdt_addr\0" \
 	"pxe_recovery=setenv autoload false && dhcp && pxe get && pxe boot\0" \
 	"recovery=run pxe_recovery || setenv ipaddr $ipaddr; setenv serverip $serverip; run tftp_recovery\0" /* setenv ipaddr and serverip is necessary, because dhclient can destroy the IPs inernally */
