@@ -272,32 +272,41 @@ int check_reset_button(void)
 		return -1;
 	}
 
-	/* Check if reset button is pressed for at least 3 seconds */
+	/* Check if reset button is pressed for at least 2 seconds ≃ ~5s */
 	do {
 		if (gpio_get_value(NETBIRD_GPIO_RESET_BUTTON) != 0)  break;
 		udelay(100000);  /* 100ms */
 		counter++;
 
-		if (counter==30) {/* Indicate factory reset threshold */
+		if (counter==20) {/* Indicate factory reset threshold */
+			gpio_set_value(NETBIRD_GPIO_LED_A, 0);
+			gpio_set_value(NETBIRD_GPIO_LED_B, 0);
+			udelay(400000);  /* 400ms */
 			/* let LED blink up once */
+			gpio_set_value(NETBIRD_GPIO_LED_A, 1);
 			gpio_set_value(NETBIRD_GPIO_LED_B, 1);
 			udelay(400000);  /* 400ms */
+			gpio_set_value(NETBIRD_GPIO_LED_A, 0);
 			gpio_set_value(NETBIRD_GPIO_LED_B, 0);
-		} else if (counter==150) { /* Indicate recovery boot threshold */
+		} else if (counter==120) { /* Indicate recovery boot threshold */
 			/* let LED blink up twice */
+			gpio_set_value(NETBIRD_GPIO_LED_A, 1);
 			gpio_set_value(NETBIRD_GPIO_LED_B, 1);
 			udelay(400000);  /* 400ms */
+			gpio_set_value(NETBIRD_GPIO_LED_A, 0);
 			gpio_set_value(NETBIRD_GPIO_LED_B, 0);
 			udelay(400000);  /* 400ms */
+			gpio_set_value(NETBIRD_GPIO_LED_A, 1);
 			gpio_set_value(NETBIRD_GPIO_LED_B, 1);
 			udelay(400000);  /* 400ms */
+			gpio_set_value(NETBIRD_GPIO_LED_A, 0);
 			gpio_set_value(NETBIRD_GPIO_LED_B, 0);
 		}
-	} while (counter<150);
+	} while (counter<120);
 
-	if (counter < 30) return 0; /* Don't do anything for duration < 3s */
+	if (counter < 20) return 0; /* Don't do anything for duration < 2s */
 
-	if (counter < 150) /* Do factory reset for duration between 3s and 15s */
+	if (counter < 120) /* Do factory reset for duration between ~5s and ~15s */
 	{
 		char new_bootargs[512];
 		char *bootargs = getenv("bootargs");
