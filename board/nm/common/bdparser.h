@@ -168,6 +168,8 @@ typedef enum _BD_Tags
   BD_Pd_Module5         =  4105,
   BD_Pd_Sim             =  4122,
   PD_Dev_Tree           =  4125,   /**<  "String"     -> Devicetree file name */
+  PD_SerDes             =  4128,   /**<  "Uint16"     -> SERDES Configuration (e.g. NB1800) */
+  PD_Shield             =  4129,   /**<  "String"     -> Shield Population (e.g. CAN/RS485) for NB800 */
 
   /* project specific tags */
   BD_BootPart			= 32768,   /**<  "UInt8" */

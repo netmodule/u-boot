@@ -37,6 +37,10 @@
 #include "../common/bdparser.h"
 #include "../common/board_descriptor.h"
 #include "board.h"
+#include "shield.h"
+#include "shield_can.h"
+#include "shield_comio.h"
+#include "fileaccess.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -324,9 +328,8 @@ int check_reset_button(void)
 
 		return 1;
 	} else {	/* Boot into recovery for duration > 15s */
-
 		/* set consoledev to external port */
-		setenv("consoledev", "ttyO0");
+		setenv("consoledev", "ttyS1");
 
 		printf("Booting recovery image...\n");
 
@@ -514,6 +517,93 @@ static void check_fct(void)
 	}
 }
 
+
+static void set_fdtshieldcmd(const char *fdt_cmd)
+{
+    setenv("fdtshieldcmd", fdt_cmd);
+}
+
+struct shield_command {
+    int shield_id;
+    const char *default_shieldcmd;
+    const char *fdtshieldcmd;
+};
+
+#define SHIELD_COM_IO	0
+#define SHIELD_DUALCAN	1
+
+static struct shield_command known_shield_commands[] = {
+    {
+        SHIELD_COM_IO,
+        "shield comio mode rs232",
+        "fdt get value serial0 /aliases serial0;" \
+        "fdt set $serial0 status okay"
+    },
+    {
+        SHIELD_DUALCAN,
+        "shield dualcan termination off off",
+        "fdt get value can0 /aliases d_can0;" \
+        "fdt get value can1 /aliases d_can1;" \
+        "fdt set $can0 status okay;" \
+        "fdt set $can1 status okay;" \
+    },
+};
+
+static const struct shield_command* get_shield_command(int shield_id)
+{
+    int i;
+
+    for (i = 0; i < ARRAY_SIZE(known_shield_commands); i++) {
+        if (known_shield_commands[i].shield_id == shield_id) {
+            return &known_shield_commands[i];
+        }
+    }
+
+    return NULL;
+}
+
+static void shield_config(void)
+{
+#define MAX_SHIELD_CMD_LEN 128
+    char shieldcmd_linux[MAX_SHIELD_CMD_LEN];
+    const char *shieldcmd;
+    const struct shield_command *cmd;
+    int len;
+
+    int shield_id = bd_get_shield(0);
+    if (shield_id < 0) {
+        printf("No shield found in bd\n");
+        return;
+    }
+
+    cmd = get_shield_command(shield_id);
+    if (cmd == NULL) {
+        printf ("Unknown shield id %d\n", shield_id);
+        return;
+    }
+
+    shieldcmd = cmd->default_shieldcmd;
+
+    /* If a shield configuration set by linux take it without bd check, we asume that Linux knows
+     * what to do. */
+    len = read_file("/root/boot/shieldcmd", shieldcmd_linux, MAX_SHIELD_CMD_LEN);
+    if (len > 0) {
+        puts("Shield command found in file, using it\n");
+        shieldcmd = shieldcmd_linux;
+    }
+
+    setenv("shieldcmd", shieldcmd);
+
+    set_fdtshieldcmd(cmd->fdtshieldcmd);
+}
+
+static void shield_init(void)
+{
+    can_shield_init();
+    comio_shield_init();
+
+    shield_config();
+}
 #endif
 
 #ifdef CONFIG_BOARD_LATE_INIT
@@ -533,6 +623,7 @@ int board_late_init(void)
 
 	/* mmcblk0p1 => root0, mmcblk0p2 => root1 so +1 */
 	setenv_ulong("root_part", boot_partition + 1);
+	fs_set_console();
 
 	check_reset_button();
 
@@ -551,7 +642,10 @@ int board_late_init(void)
 	enable_wlan_clock();
 
 #if !defined(CONFIG_SPL_BUILD)
+    shield_init();
+
 	check_fct();
+
 #endif
 
 	return 0;

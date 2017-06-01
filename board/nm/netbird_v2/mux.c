@@ -55,12 +55,14 @@ static struct module_pin_mux i2c0_pin_mux[] = {
 
 /* V2OK */
 static struct module_pin_mux uart0_netbird_pin_mux[] = {
-	{OFFSET(uart0_rxd), (MODE(0) | PULLUDEN | PULLUP_EN | RXACTIVE)},	/* (E15) UART0_RXD */
-	{OFFSET(uart0_txd), (MODE(0) | PULLUDEN | PULLUP_EN)},			/* (E16) UART0_TXD */
-	{OFFSET(uart0_ctsn), (MODE(0) | PULLUDEN | PULLUP_EN | RXACTIVE)},	/* (E18) UART0_CTSN */
-	{OFFSET(uart0_rtsn), (MODE(0) | PULLUDEN | PULLUP_EN)},			/* (E17) UART0_RTSN */
+    /* Leave UART0 unconfigured because we want to configure it as needed by linux (can/spi/uart/etc) */
+	{OFFSET(uart0_rxd), (MODE(7) | PULLUDDIS | RXACTIVE)},	/* (E15) UART0_RXD */
+	{OFFSET(uart0_txd), (MODE(7) | PULLUDDIS | RXACTIVE)},			/* (E16) UART0_TXD */
+	{OFFSET(uart0_ctsn), (MODE(7) | PULLUDDIS | RXACTIVE )},	/* (E18) UART0_CTSN */
+	{OFFSET(uart0_rtsn), (MODE(7) | PULLUDEN | PULLUP_EN )},			/* (E17) UART0_RTSN */
 	{-1},
 };
+
 
 /* V2OK */
 static struct module_pin_mux uart1_netbird_pin_mux[] = {

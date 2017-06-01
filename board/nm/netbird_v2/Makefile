@@ -10,4 +10,4 @@ ifeq ($(CONFIG_SKIP_LOWLEVEL_INIT),)
 obj-y	:= mux.o
 endif
 
-obj-y	+= board.o ../common/bdparser.o ../common/board_descriptor.o
+obj-y	+= board.o ../common/bdparser.o ../common/board_descriptor.o shield.o shield_can.o shield_comio.o fileaccess.o

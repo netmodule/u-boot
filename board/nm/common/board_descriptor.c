@@ -109,11 +109,24 @@ static bd_bool_t _get_mac( bd_uint16_t tag, bd_uint_t index, bd_uint8_t pResult[
 
 	return BD_FALSE;
 }
+
 static bd_bool_t _get_uint8( bd_uint16_t tag, bd_uint_t index, bd_uint8_t* pResult ) {
 	int i;
 
 	for (i = 0; i < bdctx_count; i++) {
 		if (BD_GetUInt8(&bdctx_list[i], tag, index, pResult)) {
+			return BD_TRUE;
+		}
+	}
+
+	return BD_FALSE;
+}
+
+static bd_bool_t _get_uint16( bd_uint16_t tag, bd_uint_t index, bd_uint16_t* pResult ) {
+	int i;
+
+	for (i = 0; i < bdctx_count; i++) {
+		if (BD_GetUInt16(&bdctx_list[i], tag, index, pResult)) {
 			return BD_TRUE;
 		}
 	}
@@ -225,6 +238,18 @@ int bd_get_devicetree(char* devicetreename, size_t len)
 	}
 
 	return 0;
+}
+
+int bd_get_shield(int shieldnr)
+{
+    bd_uint16_t shield = 0;
+
+	if (!_get_uint16(PD_Shield, shieldnr, &shield) ) {
+		debug("%s() no shield populated\n", __func__);
+        return -1;
+    }
+
+	return shield;
 }
 
 static u8 try_partition_read(void)

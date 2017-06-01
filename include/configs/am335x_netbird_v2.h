@@ -58,7 +58,8 @@
 	"kernel_addr=" KERNEL_ADDR "\0" \
 	"load_addr=" LOAD_ADDR "\0" \
 	"root_part=1\0" /* Default root partition, overwritte in board file */ \
-	"add_sd_bootargs=setenv bootargs $bootargs root=/dev/mmcblk0p$root_part rootfstype=ext4 console=ttyS1,115200 rootwait loglevel=4\0" \
+	"defaultconsole=ttyS1\0" /* Default output console */ \
+	"add_sd_bootargs=setenv bootargs $bootargs root=/dev/mmcblk0p$root_part rootfstype=ext4 console=$defaultconsole,115200 rootwait loglevel=4\0" \
 	"add_version_bootargs=setenv bootargs $bootargs\0" \
 	"fdt_skip_update=yes\0" \
 	"ethprime=cpsw\0" \
@@ -69,7 +70,7 @@
 	"sdboot=if mmc dev 1; then echo Copying Linux from SD to RAM...; "\
 			"if test -e mmc 1:$root_part /boot/$kernel_image; then run sdprod; " \
 			"else run sdbringup; fi; " \
-			"run add_sd_bootargs; run add_version_bootargs; " \
+			"run add_sd_bootargs; run add_version_bootargs; run shieldcmd; run modifyfdtcmd; " \
 			"bootz $kernel_addr - $fdt_addr; fi\0" \
 	"bootcmd=run sdboot\0" \
 	"ipaddr=192.168.1.1\0" \
@@ -83,7 +84,10 @@
 	"tftptimeoutcountmax=5\0" \
 	"bootpretryperiod=2000\0" \
 	"autoload=false\0" \
-	"tftp_recovery=tftpboot $kernel_addr recovery-image; tftpboot $fdt_addr recovery-dtb; setenv bootargs rdinit=/etc/preinit console=ttyO1,115200 debug; bootz $kernel_addr - $fdt_addr\0" \
+	"shieldcmd=\0" \
+	"fdtshieldcmd=\0" \
+	"modifyfdtcmd=fdt addr $fdt_addr; run fdtshieldcmd;\0" \
+	"tftp_recovery=tftpboot $kernel_addr recovery-image; tftpboot $fdt_addr recovery-dtb; setenv bootargs rdinit=/etc/preinit console=$defaultconsole,115200 debug; run shieldcmd; run modifyfdtcmd; bootz $kernel_addr - $fdt_addr\0" \
 	"pxe_recovery=sleep 3 && dhcp && pxe get && pxe boot\0" \
 	"recovery=run pxe_recovery || setenv ipaddr $ipaddr; setenv serverip $serverip; run tftp_recovery\0" /* setenv ipaddr and serverip is necessary, because dhclient can destroy the IPs inernally */
 

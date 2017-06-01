@@ -41,7 +41,6 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 /* GPIO that controls power to DDR on EVM-SK */
-#define GPIO_TO_PIN(bank, gpio)		(32 * (bank) + (gpio))
 #define GPIO_DDR_VTT_EN		GPIO_TO_PIN(0, 7)
 #define ICE_GPIO_DDR_VTT_EN	GPIO_TO_PIN(0, 18)
 #define GPIO_PR1_MII_CTRL	GPIO_TO_PIN(3, 4)

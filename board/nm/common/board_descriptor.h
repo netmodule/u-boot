@@ -17,5 +17,6 @@ int bd_get_devicetree(char* devicetreename, size_t len);
 int bd_get_context(BD_Context *bdctx, uint32_t i2caddress, uint32_t offset);
 void bd_register_context_list(const BD_Context *list, size_t count);
 u8 bd_get_boot_partition(void);
+int bd_get_shield(int shieldnr);
 
 #endif	/* __BOARD_DESCRIPTOR_H */
