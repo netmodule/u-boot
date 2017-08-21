@@ -96,7 +96,7 @@ static int _bd_init(void)
 	}
 
 	bd_register_context_list(bdctx, ARRAY_SIZE(bdctx));
-    return 0;
+	return 0;
 }
 
 /*
@@ -104,7 +104,7 @@ static int _bd_init(void)
  */
 static inline int __maybe_unused read_eeprom(void)
 {
-    return _bd_init();
+	return _bd_init();
 }
 
 struct serial_device *default_serial_console(void)
@@ -520,89 +520,96 @@ static void check_fct(void)
 
 static void set_fdtshieldcmd(const char *fdt_cmd)
 {
-    setenv("fdtshieldcmd", fdt_cmd);
+	setenv("fdtshieldcmd", fdt_cmd);
 }
 
 struct shield_command {
-    int shield_id;
-    const char *default_shieldcmd;
-    const char *fdtshieldcmd;
+	int shield_id;
+	const char *name;
+	const char *default_shieldcmd;
+	const char *fdtshieldcmd;
 };
 
 #define SHIELD_COM_IO	0
 #define SHIELD_DUALCAN	1
 
 static struct shield_command known_shield_commands[] = {
-    {
-        SHIELD_COM_IO,
-        "shield comio mode rs232",
-        "fdt get value serial0 /aliases serial0;" \
-        "fdt set $serial0 status okay"
-    },
-    {
-        SHIELD_DUALCAN,
-        "shield dualcan termination off off",
-        "fdt get value can0 /aliases d_can0;" \
-        "fdt get value can1 /aliases d_can1;" \
-        "fdt set $can0 status okay;" \
-        "fdt set $can1 status okay;" \
-    },
+	{
+		SHIELD_COM_IO,
+		"comio",
+		"shield comio mode rs232",
+		"fdt get value serial0 /aliases serial0;" \
+		"fdt set $serial0 status okay"
+	},
+	{
+		SHIELD_DUALCAN,
+		"dualcan",
+		"shield dualcan termination off off",
+		"fdt get value can0 /aliases d_can0;" \
+		"fdt get value can1 /aliases d_can1;" \
+		"fdt set $can0 status okay;" \
+		"fdt set $can1 status okay;" \
+	},
 };
 
 static const struct shield_command* get_shield_command(int shield_id)
 {
-    int i;
+	int i;
 
-    for (i = 0; i < ARRAY_SIZE(known_shield_commands); i++) {
-        if (known_shield_commands[i].shield_id == shield_id) {
-            return &known_shield_commands[i];
-        }
-    }
+	for (i = 0; i < ARRAY_SIZE(known_shield_commands); i++) {
+		if (known_shield_commands[i].shield_id == shield_id) {
+			return &known_shield_commands[i];
+		}
+	}
 
-    return NULL;
+	return NULL;
 }
 
 static void shield_config(void)
 {
 #define MAX_SHIELD_CMD_LEN 128
-    char shieldcmd_linux[MAX_SHIELD_CMD_LEN];
-    const char *shieldcmd;
-    const struct shield_command *cmd;
-    int len;
+	char shieldcmd_linux[MAX_SHIELD_CMD_LEN];
+	const char *shieldcmd;
+	const struct shield_command *cmd;
+	int len;
 
-    int shield_id = bd_get_shield(0);
-    if (shield_id < 0) {
-        printf("No shield found in bd\n");
-        return;
-    }
+	int shield_id = bd_get_shield(0);
+	if (shield_id < 0) {
+		printf("No shield found in bd\n");
+		return;
+	}
 
-    cmd = get_shield_command(shield_id);
-    if (cmd == NULL) {
-        printf ("Unknown shield id %d\n", shield_id);
-        return;
-    }
+	cmd = get_shield_command(shield_id);
+	if (cmd == NULL) {
+		printf ("Unknown shield id %d\n", shield_id);
+		return;
+	}
 
-    shieldcmd = cmd->default_shieldcmd;
+	printf("Shield found: %s\n", cmd->name);
 
-    /* If a shield configuration set by linux take it without bd check, we asume that Linux knows
-     * what to do. */
-    len = read_file("/root/boot/shieldcmd", shieldcmd_linux, MAX_SHIELD_CMD_LEN);
-    if (len > 0) {
-        puts("Shield command found in file, using it\n");
-        shieldcmd = shieldcmd_linux;
-    }
+	shieldcmd = cmd->default_shieldcmd;
 
-    setenv("shieldcmd", shieldcmd);
+	/* If a shield configuration set by linux take it without bd check, we asume that Linux knows
+	 * what to do. */
+	len = read_file("/root/boot/shieldcmd", shieldcmd_linux, MAX_SHIELD_CMD_LEN);
+	if (len > 0) {
+		debug("Shield command found in file, using it\n");
+		shieldcmd = shieldcmd_linux;
+	}
 
-    set_fdtshieldcmd(cmd->fdtshieldcmd);
+	printf("Shield command: %s\n", shieldcmd);
+
+	setenv("shieldcmd", shieldcmd);
+
+	set_fdtshieldcmd(cmd->fdtshieldcmd);
 }
 
 static void shield_init(void)
 {
-    can_shield_init();
-    comio_shield_init();
+	can_shield_init();
+	comio_shield_init();
 
-    shield_config();
+	shield_config();
 }
 #endif
 
@@ -642,7 +649,7 @@ int board_late_init(void)
 	enable_wlan_clock();
 
 #if !defined(CONFIG_SPL_BUILD)
-    shield_init();
+	shield_init();
 
 	check_fct();
 
