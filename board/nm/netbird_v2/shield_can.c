@@ -1,4 +1,4 @@
-#define DEBUG
+#undef DEBUG
 
 #include <common.h>
 #include <asm/gpio.h>
