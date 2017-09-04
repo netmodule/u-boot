@@ -22,7 +22,7 @@
 #include <i2c.h>
 #include <malloc.h>
 
-#include "bdparser.h"	   /* tlv parser */
+#include "bdparser.h"		/* tlv parser */
 
 #define MAX_PARTITION_ENTRIES			4
 
@@ -36,7 +36,7 @@ void bd_register_context_list(const BD_Context *list, size_t count) {
 
 int bd_get_context(BD_Context *bdctx, uint32_t i2caddress, uint32_t offset)
 {
-	bd_bool_t   rc;
+	bd_bool_t	rc;
 	uint8_t		bdHeader[8];
 	void*		pBdData = NULL;
 	/* Read header bytes from beginning of EEPROM */
@@ -242,12 +242,12 @@ int bd_get_devicetree(char* devicetreename, size_t len)
 
 int bd_get_shield(int shieldnr)
 {
-    bd_uint16_t shield = 0;
+	bd_uint16_t shield = 0;
 
 	if (!_get_uint16(PD_Shield, shieldnr, &shield) ) {
 		debug("%s() no shield populated\n", __func__);
-        return -1;
-    }
+		return -1;
+	}
 
 	return shield;
 }
