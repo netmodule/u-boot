@@ -58,7 +58,7 @@ static int configure_shieldmode(int mode)
 	int ret;
 
 	if (mode < 0 || mode > 3) {
-		printf("Invalid shield mode %d\n", mode);
+		debug ("Invalid shield mode %d\n", mode);
 		return -1;
 	}
 
@@ -138,7 +138,6 @@ static int configure_shieldmode(int mode)
 	}
 
 	return 0;
-
 }
 
 static int get_rs232(const char *mode)
@@ -160,8 +159,8 @@ static int get_termination(const char* termination)
 		return 0;
 	}
 
-	printf ("Invalid termination mode %s (falling back to off)", termination);
-	return 0;
+	debug ("Invalid termination mode %s (falling back to off)", termination);
+	return -1;
 }
 
 static int get_mode_from_args(char * const argv[], int argc)
@@ -172,7 +171,7 @@ static int get_mode_from_args(char * const argv[], int argc)
 	assert(argc >= 2);
 
 	if (strcmp ("mode", argv[0])) {
-		puts("Invalid arguments (see help)\n");
+		debug("Invalid arguments (see help)\n");
 		return -1;
 	}
 
@@ -180,10 +179,14 @@ static int get_mode_from_args(char * const argv[], int argc)
 
 	if (argc > 2) {
 		if (rs232 || strcmp("termination", argv[2])) {
-			puts("Invalid arguments, do not configure termination\n");
+			debug("Invalid arguments, do not configure termination\n");
+			return -1;
 		}
 		else {
 			termination = get_termination(argv[3]);
+			if (termination < 0) {
+				return -1;
+			}
 		}
 	}
 
@@ -194,13 +197,12 @@ static int get_mode_from_args(char * const argv[], int argc)
 int set_shieldmode(char * const argv[], int argc)
 {
 	if (argc < 2) {
-		puts("Too few arguments for comio\n");
+		debug("Too few arguments for comio\n");
 		return -1;
 	}
 
-	configure_shieldmode(get_mode_from_args(argv, argc));
-
-	return 0;
+	/* -1 will make configure_shieldmode to faile and is okay therefore */
+	return configure_shieldmode(get_mode_from_args(argv, argc));
 }
 
 struct shield_t comio_shield = {
