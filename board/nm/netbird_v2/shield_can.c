@@ -37,7 +37,7 @@ static int request_gpios(void)
 {
 	int ret;
 
-	debug("Shiled configure gpios\n");
+	debug("Shield configure gpios\n");
  	ret = shield_gpio_request_as_input(NETBIRD_GPIO_RST_SHIELD_N, "shield-rst");
 	if ((ret < 0))
 		return -1;
@@ -57,12 +57,12 @@ static int request_gpios(void)
 
 static int configure_shieldmode(int mode)
 {
-    int ret;
+	int ret;
 
-    if (mode < 0 || mode > 3) {
-        printf("Invalid shield mode %d\n", mode);
-        return -1;
-    }
+	if (mode < 0 || mode > 3) {
+		debug("Invalid shield mode %d\n", mode);
+		return -1;
+	}
 
 	debug("Shield type dualcan\n");
 	debug ("Set shield mode to %d\n", mode);
@@ -144,8 +144,8 @@ static int get_termination(const char* termination)
 		return 0;
 	}
 
-	printf ("Invalid termination mode %s (falling back to off)", termination);
-	return 0;
+	debug ("Invalid termination mode %s (falling back to off)", termination);
+	return -1;
 }
 
 static int get_mode_from_args(char * const argv[], int argc)
@@ -157,12 +157,15 @@ static int get_mode_from_args(char * const argv[], int argc)
 	assert(argc == (CAN_PORTS + 1));
 
 	if (strcmp ("termination", argv[0])) {
-		puts("The only option for dualcan is terminations\n");
+		debug("The only option for dualcan is terminations\n");
 		return -1;
 	}
 
 	for (i = 0; i < CAN_PORTS; i ++) {
 		terminations[i] = get_termination(argv[i + 1]);
+		if (terminations[i] < 0) {
+			return -1;
+		}
 	}
 
 	/* Termination is inverse */
@@ -172,12 +175,11 @@ static int get_mode_from_args(char * const argv[], int argc)
 static int set_shieldmode(char * const argv[], int argc)
 {
 	if (argc != 3) {
-		puts("Too few arguments for dualcan\n");
+		debug("Too few arguments for dualcan\n");
 		return -1;
 	}
 
-	configure_shieldmode(get_mode_from_args(argv, argc));
-    return 0;
+	return configure_shieldmode(get_mode_from_args(argv, argc));
 }
 
 struct shield_t can_shield = {

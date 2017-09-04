@@ -34,32 +34,31 @@ int shield_gpio_request_as_input(unsigned int gpio, const char *label)
 
 void shield_register(struct shield_t *shield)
 {
-    if (shield_count >= MAX_SHIELDS) {
-        printf("Max shield count reached (%d), please increment MAX_SHIELDS\n", MAX_SHIELDS);
-        return;
-    }
-    shields[shield_count++] = shield;
+	if (shield_count >= MAX_SHIELDS) {
+		printf("Max shield count reached (%d), please increment MAX_SHIELDS\n", MAX_SHIELDS);
+		return;
+	}
+	shields[shield_count++] = shield;
 }
 
 int shield_set_mode(const char* shield_type, int argc, char * const argv[])
 {
-    int i;
+	int i;
 
-    for (i = 0; i < shield_count; i++) {
-        if (strcmp(shield_type, shields[i]->name) == 0) {
-            return shields[i]->setmode(argv, argc);
-        }
-    }
-    printf("Shield %s is unknown\n", shield_type);
-    return -1;
+	for (i = 0; i < shield_count; i++) {
+		if (strcmp(shield_type, shields[i]->name) == 0) {
+			return shields[i]->setmode(argv, argc);
+		}
+	}
+	printf("Shield %s is unknown\n", shield_type);
+	return -1;
 }
 
 static int do_shieldmode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-    if (argc < 3) {
-        puts("Invalid command (see help)\n");
+	if (argc < 3) {
 		return -1;
-    }
+	}
 
 	return shield_set_mode(argv[1], argc - 2, &argv[2]);
 }

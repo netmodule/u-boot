@@ -55,12 +55,12 @@ static int request_gpios(void)
 
 static int configure_shieldmode(int mode)
 {
-    int ret;
+	int ret;
 
-    if (mode < 0 || mode > 3) {
-        printf("Invalid shield mode %d\n", mode);
-        return -1;
-    }
+	if (mode < 0 || mode > 3) {
+		printf("Invalid shield mode %d\n", mode);
+		return -1;
+	}
 
 	debug("Shield type comio\n");
 	debug ("Set shield mode to %d\n", mode);
@@ -169,7 +169,7 @@ static int get_mode_from_args(char * const argv[], int argc)
 	int termination = 0;
 	int rs232 = 0;
 
-    assert(argc >= 2);
+	assert(argc >= 2);
 
 	if (strcmp ("mode", argv[0])) {
 		puts("Invalid arguments (see help)\n");
@@ -200,7 +200,7 @@ int set_shieldmode(char * const argv[], int argc)
 
 	configure_shieldmode(get_mode_from_args(argv, argc));
 
-    return 0;
+	return 0;
 }
 
 struct shield_t comio_shield = {
