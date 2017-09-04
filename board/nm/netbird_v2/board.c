@@ -575,7 +575,7 @@ static void shield_config(void)
 
 	int shield_id = bd_get_shield(0);
 	if (shield_id < 0) {
-		printf("No shield found in bd\n");
+		debug("No shield found in bd\n");
 		return;
 	}
 
