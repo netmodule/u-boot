@@ -140,14 +140,32 @@ static int configure_shieldmode(int mode)
 	return 0;
 }
 
-static int get_rs232(const char *mode)
+enum mode_nr {
+	RS232,
+	RS485,
+	UNKNOWN
+};
+
+struct mode {
+	enum mode_nr nr;
+	const char* name;
+	int argc;
+};
+
+struct mode modes[] = {
+	{RS232, "rs232", 0},
+	{RS485, "rs485", 2}
+};
+
+static const struct mode *get_mode(const char *mode)
 {
-	if (strcmp("rs232", mode) == 0) {
-		return 1;
+	int i;
+	for (i = 0; i < ARRAY_SIZE(modes); i++) {
+		if (strcmp(modes[i].name, mode) == 0) {
+			return &modes[i];
+		}
 	}
-	else {
-		return 0;
-	}
+	return NULL;
 }
 
 static int get_termination(const char* termination)
@@ -167,6 +185,7 @@ static int get_mode_from_args(char * const argv[], int argc)
 {
 	int termination = 0;
 	int rs232 = 0;
+	const struct mode *selected_mode;
 
 	assert(argc >= 2);
 
@@ -175,18 +194,31 @@ static int get_mode_from_args(char * const argv[], int argc)
 		return -1;
 	}
 
-	rs232 = get_rs232(argv[1]);
+	selected_mode = get_mode(argv[1]);
+	if (selected_mode == NULL) {
+		debug("Mode %s not supported\n", argv[1]);
+		return -1;
+	}
 
-	if (argc > 2) {
-		if (rs232 || strcmp("termination", argv[2])) {
+	debug ("Mode %s, index %d, argc %d\n", selected_mode->name,
+			selected_mode->nr, selected_mode->argc);
+
+	if (selected_mode->argc != argc - 2) {
+		debug("Invalid argument count for mode %s (should %d is %d)\n",
+				argv[1],  selected_mode->argc, argc - 2);
+		return -1;
+	}
+
+	if (selected_mode->nr == RS485) {
+		if (strcmp("termination", argv[2])) {
 			debug("Invalid arguments, do not configure termination\n");
 			return -1;
 		}
-		else {
-			termination = get_termination(argv[3]);
-			if (termination < 0) {
-				return -1;
-			}
+
+		termination = get_termination(argv[3]);
+		if (termination < 0) {
+			debug("Invalid termination %s\n", argv[3]);
+			return -1;
 		}
 	}
 

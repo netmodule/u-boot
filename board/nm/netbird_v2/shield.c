@@ -50,13 +50,14 @@ int shield_set_mode(const char* shield_type, int argc, char * const argv[])
 			return shields[i]->setmode(argv, argc);
 		}
 	}
-	printf("Shield %s is unknown\n", shield_type);
-	return -1;
+	printf("## Error: No %s shield installed\n", shield_type);
+	/* Do not return error, to not show usage (request by rs) */
+	return 0;
 }
 
 static int do_shieldmode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	if (argc < 3) {
+	if (argc < 2) {
 		return -1;
 	}
 

@@ -528,6 +528,7 @@ struct shield_command {
 	const char *name;
 	const char *default_shieldcmd;
 	const char *fdtshieldcmd;
+	void (*init)(void);
 };
 
 #define SHIELD_COM_IO	0
@@ -539,7 +540,8 @@ static struct shield_command known_shield_commands[] = {
 		"comio",
 		"shield comio mode rs232",
 		"fdt get value serial0 /aliases serial0;" \
-		"fdt set $serial0 status okay"
+		"fdt set $serial0 status okay",
+		comio_shield_init
 	},
 	{
 		SHIELD_DUALCAN,
@@ -548,7 +550,8 @@ static struct shield_command known_shield_commands[] = {
 		"fdt get value can0 /aliases d_can0;" \
 		"fdt get value can1 /aliases d_can1;" \
 		"fdt set $can0 status okay;" \
-		"fdt set $can1 status okay;" \
+		"fdt set $can1 status okay;",
+		can_shield_init
 	},
 };
 
@@ -585,8 +588,9 @@ static void shield_config(void)
 		return;
 	}
 
-	printf("Shield found: %s\n", cmd->name);
+	printf("Shield: %s\n", cmd->name);
 
+	cmd->init();
 	shieldcmd = cmd->default_shieldcmd;
 
 	/* If a shield configuration set by linux take it without bd check, we asume that Linux knows
@@ -597,8 +601,6 @@ static void shield_config(void)
 		shieldcmd = shieldcmd_linux;
 	}
 
-	printf("Shield command: %s\n", shieldcmd);
-
 	setenv("shieldcmd", shieldcmd);
 
 	set_fdtshieldcmd(cmd->fdtshieldcmd);
@@ -606,9 +608,6 @@ static void shield_config(void)
 
 static void shield_init(void)
 {
-	can_shield_init();
-	comio_shield_init();
-
 	shield_config();
 }
 #endif
