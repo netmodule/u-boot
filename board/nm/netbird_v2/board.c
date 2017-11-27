@@ -80,6 +80,10 @@ static struct ctrl_dev *cdev = (struct ctrl_dev *)CTRL_DEVICE_BASE;
 
 static BD_Context   bdctx[3];		/* The descriptor context */
 
+
+#define SHIELD_COM_IO	0
+#define SHIELD_DUALCAN	1
+
 static int _bd_init(void)
 {
 	if (bd_get_context(&bdctx[0], BD_EEPROM_ADDR, BD_ADDRESS) != 0) {
@@ -482,6 +486,35 @@ static void enable_wlan_clock(void)
 
 #if !defined(CONFIG_SPL_BUILD)
 
+void set_console(void)
+{
+	char buf[8];
+	char *defaultconsole = getenv("defaultconsole");
+	int shield_id = bd_get_shield(0);
+
+	if (defaultconsole == 0) {
+		/* Use the default console */
+		setenv("defaultconsole", "ttyS1\n");
+	}
+
+	/* Don't allow changing to ttyS0 because ttyS0 is not available in the
+	 * kernel if no comio shield is available */
+	if (shield_id != SHIELD_COM_IO) {
+		return;
+	}
+
+	/* If consoldev is set take this as productive conosle instead of default console */
+	if (read_file("/root/boot/consoledev", buf, 5) != 5) {
+		puts("Invalid file consoledev\n");
+		return;
+	}
+
+	if (strstr(buf, "tty")==buf) {
+		buf[5] = 0;
+		setenv("defaultconsole", buf);
+	}
+}
+
 static void set_devicetree_name(void)
 {
 	char devicetreename[64];
@@ -530,9 +563,6 @@ struct shield_command {
 	const char *fdtshieldcmd;
 	void (*init)(void);
 };
-
-#define SHIELD_COM_IO	0
-#define SHIELD_DUALCAN	1
 
 static struct shield_command known_shield_commands[] = {
 	{
@@ -629,13 +659,14 @@ int board_late_init(void)
 
 	/* mmcblk0p1 => root0, mmcblk0p2 => root1 so +1 */
 	setenv_ulong("root_part", boot_partition + 1);
-	fs_set_console();
 
 	check_reset_button();
 
 	get_hw_version();
 
 	set_devicetree_name();
+
+	set_console();
 #endif
 
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
