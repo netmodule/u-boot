@@ -113,7 +113,13 @@ static inline int __maybe_unused read_eeprom(void)
 
 struct serial_device *default_serial_console(void)
 {
-	return &eserial1_device;
+	if (spl_boot_device() == BOOT_DEVICE_UART) {
+		enable_uart0_pin_mux();
+		return &eserial1_device;
+	}
+	else {
+		return &eserial2_device;
+	}
 }
 
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
@@ -206,7 +212,7 @@ const struct dpll_params *get_dpll_ddr_params(void)
 
 void set_uart_mux_conf(void)
 {
-	enable_uart0_pin_mux();
+	enable_uart0_disabled_pin_mux();
 	enable_uart1_pin_mux();
 }
 

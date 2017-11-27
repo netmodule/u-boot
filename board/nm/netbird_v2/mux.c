@@ -54,7 +54,7 @@ static struct module_pin_mux i2c0_pin_mux[] = {
 };
 
 /* V2OK */
-static struct module_pin_mux uart0_netbird_pin_mux[] = {
+static struct module_pin_mux uart0_disabled_netbird_pin_mux[] = {
     /* Leave UART0 unconfigured because we want to configure it as needed by linux (can/spi/uart/etc) */
 	{OFFSET(uart0_rxd), (MODE(7) | PULLUDDIS | RXACTIVE)},	/* (E15) UART0_RXD */
 	{OFFSET(uart0_txd), (MODE(7) | PULLUDDIS | RXACTIVE)},			/* (E16) UART0_TXD */
@@ -63,6 +63,12 @@ static struct module_pin_mux uart0_netbird_pin_mux[] = {
 	{-1},
 };
 
+static struct module_pin_mux uart0_netbird_pin_mux[] = {
+    /* Leave UART0 unconfigured because we want to configure it as needed by linux (can/spi/uart/etc) */
+	{OFFSET(uart0_rxd), (MODE(0) | PULLUDEN | PULLUP_EN | RXACTIVE)},	/* (E15) UART0_RXD */
+	{OFFSET(uart0_txd), (MODE(0) | PULLUDEN | PULLUP_EN)},			/* (E16) UART0_TXD */
+	{-1},
+};
 
 /* V2OK */
 static struct module_pin_mux uart1_netbird_pin_mux[] = {
@@ -152,6 +158,11 @@ static struct module_pin_mux unused_netbird_pin_mux[] = {
 void enable_uart0_pin_mux(void)
 {
 	configure_module_pin_mux(uart0_netbird_pin_mux);
+}
+
+void enable_uart0_disabled_pin_mux(void)
+{
+	configure_module_pin_mux(uart0_disabled_netbird_pin_mux);
 }
 
 void enable_uart1_pin_mux(void)
