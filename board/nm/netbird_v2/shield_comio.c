@@ -221,6 +221,9 @@ static int get_mode_from_args(char * const argv[], int argc)
 			return -1;
 		}
 	}
+	else {
+		rs232 = 1;
+	}
 
 	/* Termination is inverse */
 	return (rs232 << 0) | ((!termination) << 1);
