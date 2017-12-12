@@ -80,7 +80,6 @@ static struct ctrl_dev *cdev = (struct ctrl_dev *)CTRL_DEVICE_BASE;
 
 static BD_Context   bdctx[3];		/* The descriptor context */
 
-
 #define SHIELD_COM_IO	0
 #define SHIELD_DUALCAN	1
 
@@ -500,7 +499,7 @@ void set_console(void)
 
 	if (defaultconsole == 0) {
 		/* Use the default console */
-		setenv("defaultconsole", "ttyS1\n");
+		setenv("defaultconsole", "ttyS1");
 	}
 
 	/* Don't allow changing to ttyS0 because ttyS0 is not available in the
@@ -508,6 +507,9 @@ void set_console(void)
 	if (shield_id != SHIELD_COM_IO) {
 		return;
 	}
+
+	/* With comio shield the defaultconsole should be ttyS0 and not ttyS1 */
+	setenv("defaultconsole", "ttyS0");
 
 	/* If consoldev is set take this as productive conosle instead of default console */
 	if (read_file("/root/boot/consoledev", buf, 5) != 5) {
